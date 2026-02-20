@@ -1,0 +1,182 @@
+DIGEST 593a8916c13ae2349369e6d606ddc24f
+FEvents
+R15:48 Coq.Relations.Relation_Definitions <> <> lib
+R66:97 Coq.Relations.Relation_Operators <> <> lib
+R116:127 Coq.Init.Nat <> <> lib
+def 142:149 <> Location
+R154:156 Coq.Init.Datatypes <> nat ind
+def 170:174 <> Value
+R182:184 Coq.Init.Datatypes <> nat ind
+def 198:205 <> UniqueId
+R210:212 Coq.Init.Datatypes <> nat ind
+def 226:233 <> ThreadId
+R238:240 Coq.Init.Datatypes <> nat ind
+ind 255:257 <> Tag
+constr 271:274 <> tmov
+constr 284:287 <> trmw
+R278:280 Events <> Tag:1 ind
+R291:293 Events <> Tag:1 ind
+scheme 255:257 <> Tag_rect
+scheme 255:257 <> Tag_ind
+scheme 255:257 <> Tag_rec
+scheme 255:257 <> Tag_sind
+def 308:317 <> UniquePred
+binder 320:320 <> A:3
+R329:332 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R328:328 Events <> A:3 var
+binder 324:324 <> P:4
+binder 351:351 <> x:5
+binder 353:353 <> y:6
+R359:362 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R356:356 Events <> P:4 var
+R358:358 Events <> x:5 var
+R366:369 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R363:363 Events <> P:4 var
+R365:365 Events <> y:6 var
+R371:373 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R370:370 Events <> x:5 var
+R374:374 Events <> y:6 var
+rec 385:394 <> LabelClass
+proj 418:423 <> labs_r
+proj 444:449 <> labs_w
+proj 470:475 <> labs_f
+proj 590:598 <> labs_xopt
+proj 763:775 <> labs_r_unique
+proj 800:812 <> labs_w_unique
+proj 837:849 <> labs_f_unique
+proj 875:883 <> lab_r_tag
+proj 931:939 <> lab_w_tag
+proj 987:995 <> lab_r_loc
+proj 1048:1056 <> lab_r_val
+proj 1106:1114 <> lab_w_loc
+proj 1167:1175 <> lab_w_val
+proj 1225:1234 <> lab_eq_dec
+binder 397:401 <> Label:7
+R432:435 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R427:431 Events <> Label:7 var
+R458:461 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R453:457 Events <> Label:7 var
+R484:487 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R479:483 Events <> Label:7 var
+binder 613:613 <> l:12
+R622:622 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R655:665 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R631:634 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R623:628 Events <> labs_r:9 meth
+R630:630 Events <> l:12 var
+R643:646 Coq.Init.Logic <> ::type_scope:x_'\/'_x not
+R635:640 Events <> labs_w:10 meth
+R642:642 Events <> l:12 var
+R647:652 Events <> labs_f:11 meth
+R654:654 Events <> l:12 var
+R690:699 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R666:668 Coq.Init.Logic <> ::type_scope:'~'_x not
+R689:689 Coq.Init.Logic <> ::type_scope:'~'_x not
+R677:680 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R669:674 Events <> labs_r:9 meth
+R676:676 Events <> l:12 var
+R681:686 Events <> labs_w:10 meth
+R688:688 Events <> l:12 var
+R724:733 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R700:702 Coq.Init.Logic <> ::type_scope:'~'_x not
+R723:723 Coq.Init.Logic <> ::type_scope:'~'_x not
+R711:714 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R703:708 Events <> labs_r:9 meth
+R710:710 Events <> l:12 var
+R715:720 Events <> labs_f:11 meth
+R722:722 Events <> l:12 var
+R734:736 Coq.Init.Logic <> ::type_scope:'~'_x not
+R757:757 Coq.Init.Logic <> ::type_scope:'~'_x not
+R745:748 Coq.Init.Logic <> ::type_scope:x_'/\'_x not
+R737:742 Events <> labs_w:10 meth
+R744:744 Events <> l:12 var
+R749:754 Events <> labs_f:11 meth
+R756:756 Events <> l:12 var
+R779:788 Events <> UniquePred def
+R790:795 Events <> labs_r:9 meth
+R816:825 Events <> UniquePred def
+R827:832 Events <> labs_w:10 meth
+R853:862 Events <> UniquePred def
+R864:869 Events <> labs_f:11 meth
+R902:906 Events <> Label:7 var
+binder 898:900 <> lab:17
+R919:922 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R909:914 Events <> labs_r:9 meth
+R916:918 Events <> lab:17 var
+R923:925 Events <> Tag ind
+R958:962 Events <> Label:7 var
+binder 954:956 <> lab:19
+R975:978 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R965:970 Events <> labs_w:10 meth
+R972:974 Events <> lab:19 var
+R979:981 Events <> Tag ind
+R1014:1018 Events <> Label:7 var
+binder 1010:1012 <> lab:21
+R1031:1034 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1021:1026 Events <> labs_r:9 meth
+R1028:1030 Events <> lab:21 var
+R1035:1042 Events <> Location def
+R1075:1079 Events <> Label:7 var
+binder 1071:1073 <> lab:23
+R1092:1095 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1082:1087 Events <> labs_r:9 meth
+R1089:1091 Events <> lab:23 var
+R1096:1100 Events <> Value def
+R1133:1137 Events <> Label:7 var
+binder 1129:1131 <> lab:25
+R1150:1153 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1140:1145 Events <> labs_w:10 meth
+R1147:1149 Events <> lab:25 var
+R1154:1161 Events <> Location def
+R1194:1198 Events <> Label:7 var
+binder 1190:1192 <> lab:27
+R1211:1214 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1201:1206 Events <> labs_w:10 meth
+R1208:1210 Events <> lab:27 var
+R1215:1219 Events <> Value def
+R1255:1259 Events <> Label:7 var
+binder 1249:1249 <> x:29
+binder 1251:1251 <> y:30
+R1262:1262 Coq.Init.Specif <> ::type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1268:1272 Coq.Init.Specif <> ::type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1279:1279 Coq.Init.Specif <> ::type_scope:'{'_x_'}'_'+'_'{'_x_'}' not
+R1264:1266 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R1263:1263 Events <> x:29 var
+R1267:1267 Events <> y:30 var
+R1274:1277 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R1273:1273 Events <> x:29 var
+R1278:1278 Events <> y:30 var
+ind 1436:1440 <> Event
+constr 1503:1511 <> EventInit
+constr 1566:1574 <> EventSkip
+constr 1620:1630 <> EventThread
+binder 1443:1447 <> Label:32
+R1469:1478 Events <> LabelClass rec
+R1480:1484 Events <> Label:32 var
+binder 1456:1465 <> LabelProof:33
+R1523:1526 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1515:1522 Events <> UniqueId def
+R1535:1538 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1527:1534 Events <> Location def
+R1544:1547 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1539:1543 Events <> Value def
+R1548:1552 Events <> Event:34 ind
+R1554:1558 Events <> Label:32 var
+R1586:1589 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1578:1585 Events <> UniqueId def
+R1598:1601 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1590:1597 Events <> ThreadId def
+R1602:1606 Events <> Event:34 ind
+R1608:1612 Events <> Label:32 var
+R1642:1645 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1634:1641 Events <> UniqueId def
+R1654:1657 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1646:1653 Events <> ThreadId def
+R1663:1666 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1658:1662 Events <> Label:32 var
+R1667:1671 Events <> Event:34 ind
+R1673:1677 Events <> Label:32 var
+scheme 1436:1440 <> Event_rect
+scheme 1436:1440 <> Event_ind
+scheme 1436:1440 <> Event_rec
+scheme 1436:1440 <> Event_sind
