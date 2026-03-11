@@ -87,5 +87,4 @@ Definition Behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution
       is_w (event_label e) /\
       lab_loc (event_label e) = l /\
       lab_val (event_label e) = v /\ 
-      ~(exists (e': Event), (X.(mo) e e')). 
-      
+      ~(exists (e': Event), (X.(mo) e e')).  
