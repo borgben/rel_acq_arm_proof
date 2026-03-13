@@ -35,7 +35,7 @@ match lab_Arm with
 end. 
 
 Definition map_event_Arm_X86 (event_Arm:@Event LabelArm LabelClassArm):@Event LabelX86 LabelClassX86 := 
-match  event_Arm with 
+match event_Arm with 
 | EventInit uid lab => EventInit uid (map_label_Arm_X86 lab)
 | EventThread uid tid lab => EventThread uid tid (map_label_Arm_X86 lab)
 end. 
@@ -76,6 +76,13 @@ Lemma map_event_Arm_X86_inverse:
 Proof with eauto. 
     intros. destruct e; destruct lab; simpl; reflexivity.     
 Qed. 
+
+Lemma map_event_X86_Arm_inverse:
+  forall e,
+  map_event_X86_Arm (map_event_Arm_X86 e) = e. 
+Proof.
+    intros. destruct e; destruct lab; simpl; reflexivity.
+Qed.
 
 Lemma mapping_preserves_writes: forall (execArm:@Execution LabelArm LabelClassArm) (e:@Event LabelArm LabelClassArm), 
     ((events execArm) e) /\ (is_w (event_label e)) 
@@ -136,4 +143,16 @@ Proof with eauto.
       -- unfold not. intros. unfold not in H5. 
          apply H5. destruct H. exists (map_event_X86_Arm x).  
          apply mapping_preserves_mo. rewrite map_event_Arm_X86_inverse...
-Admitted.
+    - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 [H4 H5]]]].
+      exists (map_event_X86_Arm e). repeat split.
+      -- simpl in H1. destruct H1.  destruct H.  rewrite H0. 
+         rewrite map_event_X86_Arm_inverse...
+      -- destruct e; destruct lab; simpl...
+      -- simpl. destruct e; destruct lab; simpl...
+      -- simpl. destruct e; destruct lab; simpl...
+      -- unfold not. unfold not in H5. intros [e0 H6]. apply H5.
+         exists (map_event_Arm_X86 e0). simpl. simpl in H1. destruct H1. destruct H.
+         exists x, e0. repeat split. 
+         --- rewrite H0 in H6. rewrite map_event_X86_Arm_inverse in H6...
+         --- eauto.
+Qed.
