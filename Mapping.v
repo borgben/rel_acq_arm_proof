@@ -111,16 +111,15 @@ Proof with eauto.
     unfold Behaviour. 
     split. 
     - intros. destruct H as [e]. destruct H as [H1 [H2 [H3 H4]]]. 
-      exists (map_event_Arm_X86 e). all:split.
+      exists (map_event_Arm_X86 e); repeat split.  
       -- simpl. exists e. split... 
-      -- split. 
-         --- assert (H5: events execArm e /\ is_w (event_label e)). { eauto. } 
-             rewrite mapping_preserves_writes in H5. destruct H5 as [_ H5]...
-         --- split. (* Mapping Preserves Location *) admit.
-             ---- split. (* Mapping Preserves Values *) admit. 
-                  ----- destruct H4 as [_ H5]. unfold not. intros. unfold not in H5. 
-                        apply H5. destruct H. exists (map_event_X86_Arm x).  
-                        apply mapping_preserves_mo. rewrite map_event_Arm_X86_inverse... 
+      -- assert (H5: events execArm e /\ is_w (event_label e)). { eauto. } 
+             rewrite mapping_preserves_writes in H5. destruct H5 as [_ H5]... 
+      -- (* Mapping Preserves Location *) admit. 
+      -- (* Mapping Preserves Values *) admit. 
+      -- destruct H4 as [_ H5]. unfold not. intros. unfold not in H5. 
+         apply H5. destruct H. exists (map_event_X86_Arm x).  
+         apply mapping_preserves_mo. rewrite map_event_Arm_X86_inverse... 
 Admitted.   
     
     
