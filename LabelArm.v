@@ -22,12 +22,12 @@ Instance LabelClassArm: LabelClass LabelArm := {
                 end;
 
     is_r l := match l with
-                | W_Rel _ _ => True 
-                | R_Acq_Pc _ _ => False 
+                | W_Rel _ _ => False 
+                | R_Acq_Pc _ _ => True 
                 end;
 
     is_w l := match l with
-                | W_Rel _ _ => False 
-                | R_Acq_Pc _ _ => True 
+                | W_Rel _ _ => True 
+                | R_Acq_Pc _ _ => False 
                 end;
 }. 

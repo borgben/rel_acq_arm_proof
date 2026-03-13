@@ -6,7 +6,7 @@ Definition TID := nat.
 
 (* Events all have the same structure, we might however wish to instantiate 
    Events for different architectures with different labels. *)
-Inductive Event (Label:Type) `{LabelProof:LabelClass Label} : Type := 
+Inductive Event {Label:Type} `{LabelProof:LabelClass Label} : Type := 
     | EventInit (uid:UID) (lab:Label) 
     (* | EventSkip : UniqueId -> ThreadId -> Event Label *)
     | EventThread (uid:UID) (tid:TID) (lab:Label).

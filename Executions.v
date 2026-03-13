@@ -80,12 +80,12 @@ Definition atomicity_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Exe
 
 Definition coherence_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Execution): Prop :=
     acyclic ((poloc e) ∪ (rf e) ∪ (mo e) ∪ (fr e)).
-    
+
 Definition Behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution) : Location * Value -> Prop :=
   fun '(l,v) =>
-    exists e, 
+    exists e,
+      X.(events) e /\
       is_w (event_label e) /\
       lab_loc (event_label e) = l /\
-      lab_val (event_label e) = v /\ 
+      lab_val (event_label e) = v /\
       ~(exists (e': Event), (X.(mo) e e')). 
-      

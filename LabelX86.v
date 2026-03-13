@@ -22,12 +22,12 @@ Instance LabelClassX86: LabelClass LabelX86 := {
                 end;
 
     is_r l := match l with
-                | W_x86 _ _ => True 
-                | R_x86 _ _ => False 
+                | W_x86 _ _ => False  
+                | R_x86 _ _ => True 
                 end;
 
     is_w l := match l with
-                | W_x86 _ _ => False 
-                | R_x86 _ _ => True 
+                | W_x86 _ _ => True  
+                | R_x86 _ _ => False
                 end;
 }. 
