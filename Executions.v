@@ -78,8 +78,34 @@ Definition atomicity_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Exe
                            /\ (rmw e) x y                (* x and y are in rmw *)
                            /\ ((fr e) ⨾ (mo e)) x y).     (* x and y are in rmw *)
 
-Definition coherence_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Execution): Prop :=
-    acyclic ((poloc e) ∪ (rf e) ∪ (mo e) ∪ (fr e)).
+Definition coherence_axiom {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
+    acyclic ((poloc exec) ∪ (rf exec) ∪ (mo exec) ∪ (fr exec)).
+
+
+
+(* x86 axiom *)
+Definition implid_x86 (exec: Execution): relation Event :=
+    let atomic := (dom_rel (rmw exec)) ∪ (codom_rel (rmw exec)) in
+        ((po exec) ⨾ atomic) ∪ (atomic ⨾ (po exec)).
+
+Definition ppo_x86 (exec: Execution): relation Event :=
+    (po exec) \ () (* po minus write-read *)
+
+Definition hb_x86 (exec: Execution): relation Event :=
+    (ppo_x86 exec) ∪ (implid_x86 exec) ∪ (external rf exec) ∪ (fr exec) ∪ (co exec).
+
+Definition ordered_before_x86 (exec: Execution): Prop :=
+    irreflexive (hb⁺).
+
+
+
+(* ARM axiom *)
+Definition ordered_before_arm (e1 e2: Event): Prop :=
+(* ob = (((R_acq_pc ; po) ∪ (po ; W_rel)) ∪ rfe ∪ moe ∪ fre)+ *)
+(* bob = ((R_acq_pc ; po) ∪ (po ; W_rel))*)
+
+(* ob is irreflexive *)
+
 
 Definition Behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution) : Location * Value -> Prop :=
   fun '(l,v) =>

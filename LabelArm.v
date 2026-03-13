@@ -1,8 +1,3 @@
-(* ob = (bob ∪ rfe ∪ moe ∪ fre)+ *)
-(* bob = ((R_acq_pc ; po) ∪ (po ; W_rel))*)
-
-(* ob is irreflexive *)
-
 From RelAcqProof Require Import Label. 
 
 Inductive LabelArm := 

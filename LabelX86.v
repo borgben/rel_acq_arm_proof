@@ -1,9 +1,5 @@
-(* ob = (bob ∪ rfe ∪ moe ∪ fre)+ *)
-(* bob = ((R_acq_pc ; po) ∪ (po ; W_rel))*)
-
-(* ob is irreflexive *)
-
 From RelAcqProof Require Import Label. 
+From hahn Require Import Hahn.
 
 Inductive LabelX86 := 
 | W_x86 (loc:Location) (val:Value)
@@ -31,3 +27,6 @@ Instance LabelClassX86: LabelClass LabelX86 := {
                 | R_x86 _ _ => False
                 end;
 }. 
+
+
+(* lob =  *)
