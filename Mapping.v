@@ -5,6 +5,7 @@ From RelAcqProof Require Import LabelArm.
 From RelAcqProof Require Import LabelX86. 
 From Coq Require Import Logic.FunctionalExtensionality. 
 From Coq Require Import Logic.PropExtensionality. 
+
 (* *************************** Map from X86 to Arm ************************* *)
 Definition map_label_X86_Arm (lab_X86: LabelX86): LabelArm := 
 match lab_X86 with
@@ -50,11 +51,13 @@ Definition map_exec_Arm_X86 (execArm:@Execution LabelArm LabelClassArm):@Executi
 
 (* *************************** Mapping Lemmas ****************************** *)
 Lemma map_label_Arm_X86_injective:
-  forall e e0,
-  map_label_Arm_X86 e = map_label_Arm_X86 e0 ->
-  e = e0.
+  forall l l0,
+  map_label_Arm_X86 l = map_label_Arm_X86 l0 ->
+  l = l0.
 Proof with eauto. 
-    intros. destruct e, e0; simpl in H. all:try(inversion H; injection H; intros; subst; eauto). 
+    intros. 
+    destruct l, l0; simpl in H. 
+    all:try(inversion H; injection H; intros; subst; reflexivity). 
 Qed.  
 
 Lemma map_event_Arm_X86_injective :
