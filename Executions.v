@@ -72,7 +72,6 @@ Definition well_formed {Label: Type} {LabelProof: LabelClass Label} (exec:Execut
     well_formed_mo exec /\ well_formed_rf exec /\ well_formed_rmw exec. 
 
 (* Define atomicity and coherence axioms because they are generic across the two itegrations *)
-(* Hahn gives us a ⨾ for relation composition (haskell . but better) *)
 Definition atomicity_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Execution): Prop :=
     ~(exists (x y: Event), (events e) x /\ (events e) y  (* x and y are from the execution *)
                            /\ (rmw e) x y                (* x and y are in rmw *)
@@ -83,28 +82,42 @@ Definition coherence_axiom {Label: Type} {LabelProof : LabelClass Label} (exec: 
 
 
 
-(* x86 axiom *)
-Definition implid_x86 (exec: Execution): relation Event :=
-    let atomic := (dom_rel (rmw exec)) ∪ (codom_rel (rmw exec)) in
+
+
+(* atomic ops (in domain or codomain of rmw) act as a barrier between them and what happens before or after *)
+Definition implid_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
+    let atomic := ⦗dom_rel (rmw exec)⦘ ∪ ⦗codom_rel (rmw exec)⦘ in
         ((po exec) ⨾ atomic) ∪ (atomic ⨾ (po exec)).
 
-Definition ppo_x86 (exec: Execution): relation Event :=
-    (po exec) \ () (* po minus write-read *)
+(* TSO enforces everything but W -> R to be ordered *)
+(* is the last case even needed, considering we're esentially doing set difference? *)
+Definition ppo_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
+    (po exec) \ (fun w r => is_w (event_label w) /\ is_r (event_label r) /\ ((po exec) r w)). 
 
-Definition hb_x86 (exec: Execution): relation Event :=
-    (ppo_x86 exec) ∪ (implid_x86 exec) ∪ (external rf exec) ∪ (fr exec) ∪ (co exec).
+(* happens before is defined by the union of several relations *)
+Definition hb_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
+    (ppo_x86 exec) ∪ (implid_x86 exec) ∪ (external rf exec) ∪ (fr exec) ∪ (mo exec).
 
-Definition ordered_before_x86 (exec: Execution): Prop :=
-    irreflexive (hb⁺).
+(* x86 Axiom: the transitive closure of happens before must be irreflexive (cycles cause it to be reflexive) *)
+Definition ordered_before_axiom_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
+    irreflexive ((hb_x86 exec)⁺).
+
+
 
 
 
 (* ARM axiom *)
-Definition ordered_before_arm (e1 e2: Event): Prop :=
-(* ob = (((R_acq_pc ; po) ∪ (po ; W_rel)) ∪ rfe ∪ moe ∪ fre)+ *)
-(* bob = ((R_acq_pc ; po) ∪ (po ; W_rel))*)
+(* bob = ((R_acq_pc ; po) ∪ (po ; W_rel)) *)
+Definition bob_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
+    let R := ⦗fun r => is_r (event_label r)⦘ in 
+    let W := ⦗fun w => is_w (event_label w)⦘ in
+    (R ⨾ (po exec)) ∪ ((po exec) ⨾ W).
 
-(* ob is irreflexive *)
+(* ob = (bob ∪ rfe ∪ moe ∪ fre)+ *)
+Definition ordered_before_axiom_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
+    irreflexive (((bob_arm exec) ∪ (external rf exec) ∪ (external mo exec) ∪ (external fr exec))⁺).
+
+
 
 
 Definition Behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution) : Location * Value -> Prop :=
