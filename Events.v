@@ -8,7 +8,6 @@ Definition TID := nat.
    Events for different architectures with different labels. *)
 Inductive Event {Label:Type} `{LabelProof:LabelClass Label} : Type := 
     | EventInit (uid:UID) (lab:Label) 
-    (* | EventSkip : UniqueId -> ThreadId -> Event Label *)
     | EventThread (uid:UID) (tid:TID) (lab:Label).
 
 Definition same_thread (Label:Type) `{Label:LabelClass Label} (e1 e2:Event): Prop := 

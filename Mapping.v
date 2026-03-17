@@ -3,9 +3,8 @@ From RelAcqProof Require Import Events.
 From RelAcqProof Require Import Label. 
 From RelAcqProof Require Import LabelArm.
 From RelAcqProof Require Import LabelX86. 
-From Coq Require Import Logic.FunctionalExtensionality. 
-From Coq Require Import Logic.PropExtensionality. 
 
+From Coq Require Import Program.Equality. 
 (* *************************** Map from X86 to Arm ************************* *)
 Definition map_label_X86_Arm (lab_X86: LabelX86): LabelArm := 
 match lab_X86 with
@@ -341,9 +340,21 @@ Proof with eauto.
     exists (map_event_X86_Arm z). split. 
     rewrite mapping_preserves_fr. repeat rewrite map_event_Arm_X86_inverse...    
     rewrite mapping_preserves_mo. repeat rewrite map_event_Arm_X86_inverse...
-Qed.  
+Qed. 
 
-
+Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm),
+    ordered_before_axiom_arm execArm -> ordered_before_axiom_x86 (map_exec_Arm_X86 execArm).
+Proof with eauto.  
+    intros. 
+    unfold ordered_before_axiom_arm in H.  
+    unfold HahnRelationsBasic.irreflexive in H. 
+    unfold ordered_before_axiom_x86.  
+    unfold HahnRelationsBasic.irreflexive. 
+    intros. 
+    dependent induction H0.  
+    - admit. 
+    - specialize IHclos_trans1 with (x) (execArm).  apply IHclos_trans1...        
+    
 
 Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
     Behaviour (execArm) (l, v) <-> Behaviour (map_exec_Arm_X86 execArm) (l, v).  
