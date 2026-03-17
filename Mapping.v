@@ -342,20 +342,6 @@ Proof with eauto.
     rewrite mapping_preserves_mo. repeat rewrite map_event_Arm_X86_inverse...
 Qed. 
 
-Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm),
-    ordered_before_axiom_arm execArm -> ordered_before_axiom_x86 (map_exec_Arm_X86 execArm).
-Proof with eauto.  
-    intros. 
-    unfold ordered_before_axiom_arm in H.  
-    unfold HahnRelationsBasic.irreflexive in H. 
-    unfold ordered_before_axiom_x86.  
-    unfold HahnRelationsBasic.irreflexive. 
-    intros. 
-    dependent induction H0.  
-    - admit. 
-    - specialize IHclos_trans1 with (x) (execArm).  apply IHclos_trans1...        
-    
-
 Lemma mapping_preserves_behaviour: forall (execArm:@Execution LabelArm LabelClassArm) (l:Location) (v:Value), 
     Behaviour (execArm) (l, v) <-> Behaviour (map_exec_Arm_X86 execArm) (l, v).  
 Proof with eauto.
