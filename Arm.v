@@ -32,15 +32,31 @@ Instance LabelClassArm: LabelClass LabelArm := {
 
 (* ARM axiom *)
 (* bob = ((R_acq_pc ; po) ∪ (po ; W_rel)) *)
-Definition bob_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
-    let R := ⦗fun r => is_r (event_label r)⦘ in 
-    let W := ⦗fun w => is_w (event_label w)⦘ in
+(* intervening-write(rel) = rel ; W ; rel *)
+(* lrs = W ; poloc / intervening-write(poloc) ; R *)
+(* aob = rmw ∪ (W ∩ codomain(rmw) ; lrs ; R) *)
+(* ob = (bob ∪ aob U rfe ∪ moe ∪ fre)+ *)
+
+Definition R: relation Event := ⦗fun r => is_r (event_label r)⦘.
+Definition W: relation Event := ⦗fun w => is_w (event_label w)⦘.
+
+Definition bob_arm (exec: Execution): relation Event := 
     (R ⨾ (po exec)) ∪ ((po exec) ⨾ W).
 
-(* ob = (bob ∪ rfe ∪ moe ∪ fre)+ *)
-Definition ordered_before_axiom_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
-    irreflexive (((bob_arm exec) ∪ (external rf exec) ∪ (external mo exec) ∪ (external fr exec))⁺).
-    
+Definition intervening_write (rel: relation Event): relation Event :=
+    rel ⨾ W ⨾ rel.
 
-Definition arm_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
+Definition lrs (exec: Execution): relation Event := 
+    W ⨾ ((poloc exec) \ ((intervening_write (poloc exec)) ⨾ R)).
+
+Definition aob (exec: Execution): relation Event :=
+    (rmw exec) ∪ (⦗codom_rel (rmw exec)⦘ ⨾ (lrs exec) ⨾ R).
+
+Definition ob (exec: Execution): relation Event := 
+    ((aob exec) ∪ (bob_arm exec) ∪ (external rf exec) ∪ (external mo exec) ∪ (external fr exec))⁺.
+
+Definition ordered_before_axiom_arm (exec: Execution): Prop := 
+    irreflexive (ob exec).
+
+Definition arm_consistent (exec: Execution): Prop := 
     well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_arm exec. 
