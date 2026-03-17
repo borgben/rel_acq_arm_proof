@@ -348,7 +348,7 @@ Proof with eauto.
     induction H0. 
     - destruct H  as [[[[H0| H1]| H2] | H3] | H4]. 
         -- unfold aob in H0. destruct H0  as [H0 | H1]; unfold hb_x86. 
-           --- left. left. left. right. unfold well_formed_rmw in H7. 
+           --- left. left. left. left. right. unfold well_formed_rmw in H7. 
                specialize (H7 x y). apply H7 in H0 as H8. destruct H8 as [H9 [H10 [H11 H12]]]. 
                unfold implid_x86. left. unfold seq. exists (map_event_Arm_X86 y). split. 
                ---- unfold poimm  in H11. destruct H11 as [H11 _]. rewrite mapping_preserves_po in H11...
