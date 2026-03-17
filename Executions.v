@@ -20,7 +20,7 @@ Record Execution {Label : Type} `{LabelProof: LabelClass Label} := {
     (* Derived Relation*)
     rmw: relation Event; 
 }. 
- 
+
 (* Internal Relation *)
 (* We are stating that an internal relation (intra-thread) formally means that 
    Given some binary relation R over the given Execution, the internal version of said relation 
@@ -80,10 +80,6 @@ Definition atomicity_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Exe
 Definition coherence_axiom {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
     acyclic ((poloc exec) ∪ (rf exec) ∪ (mo exec) ∪ (fr exec)).
 
-
-
-
-
 (* atomic ops (in domain or codomain of rmw) act as a barrier between them and what happens before or after *)
 Definition implid_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
     let atomic := ⦗dom_rel (rmw exec)⦘ ∪ ⦗codom_rel (rmw exec)⦘ in
@@ -102,10 +98,6 @@ Definition hb_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution
 Definition ordered_before_axiom_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
     irreflexive ((hb_x86 exec)⁺).
 
-
-
-
-
 (* ARM axiom *)
 (* bob = ((R_acq_pc ; po) ∪ (po ; W_rel)) *)
 Definition bob_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
@@ -117,9 +109,12 @@ Definition bob_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Executio
 Definition ordered_before_axiom_arm {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
     irreflexive (((bob_arm exec) ∪ (external rf exec) ∪ (external mo exec) ∪ (external fr exec))⁺).
 
-
-
-
+Definition x86_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
+    well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_x86 exec.
+    
+Definition arm_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
+    well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_arm exec. 
+    
 Definition Behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution) : Location * Value -> Prop :=
   fun '(l,v) =>
     exists e,
