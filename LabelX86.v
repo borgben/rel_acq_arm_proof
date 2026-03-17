@@ -27,6 +27,3 @@ Instance LabelClassX86: LabelClass LabelX86 := {
                 | R_x86 _ _ => False
                 end;
 }. 
-
-
-(* lob =  *)

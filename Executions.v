@@ -54,7 +54,7 @@ Definition well_formed_mo {Label: Type} {LabelProof: LabelClass Label} (exec:Exe
     forall (e1 e2:Event), (mo exec) e1 e2 -> both_write e1 e2 /\ same_loc e1 e2 /\ e1 <> e2. 
 
 (* Expresses that an rf relation can only exist between a write and a read on the same location, 
-   with the same value, and that a read can only be from a single write *)
+   with the same value, uid < uid'and that a read can only be from a single write *)
 Definition well_formed_rf {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
     forall (w r:Event), (rf exec) w r -> is_w (event_label w) /\ is_r (event_label r)
                                          /\ same_loc w r 
