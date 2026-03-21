@@ -45,8 +45,6 @@ Definition map_exec_Arm_X86 (execArm:@Execution LabelArm LabelClassArm):@Executi
     mo     := fun e1 e2 => exists x y, mo execArm x y /\ e1 = map_event_Arm_X86 x /\ e2 = map_event_Arm_X86 y; 
     rmw    := fun e1 e2 => exists x y, rmw execArm x y /\ e1 = map_event_Arm_X86 x /\ e2 = map_event_Arm_X86 y;  
 |}. 
-
-
 (* *************************** Mapping Lemmas ****************************** *)
 
 Lemma mapping_preserves_writes_arm: forall (e:@Event LabelArm LabelClassArm), 
