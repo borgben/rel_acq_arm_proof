@@ -610,22 +610,41 @@ Proof with eauto.
       eexists...   
 Qed. 
 
-
-(* Lemma mapping_preserves_atomicity: forall (execArm:@Execution LabelArm LabelClassArm), 
-    atomicity_axiom execArm -> atomicity_axiom (map_exec_Arm_X86 execArm). 
+Lemma mapping_preserves_atomicity: forall (execArm:@Execution LabelArm LabelClassArm), 
+    well_formed execArm -> atomicity_axiom execArm -> atomicity_axiom (map_exec_Arm_X86 execArm). 
 Proof with eauto. 
-    intros. unfold atomicity_axiom in H. unfold atomicity_axiom. unfold not in H. unfold not. intros. apply H.
-    destruct H0 as [x [y [H0 [H1 [H2 H3]]]]].  
-    exists (map_event_X86_Arm x),  (map_event_X86_Arm y). 
-    rewrite mapping_preserves_events_arm. rewrite mapping_preserves_events_arm.
-    rewrite mapping_preserves_rmw. repeat split.   
-    all:try(repeat rewrite map_event_Arm_X86_inverse; eauto). 
-    unfold HahnRelationsBasic.seq in H3. unfold HahnRelationsBasic.seq. destruct H3 as [z [H3 H4]].  
-    exists (map_event_X86_Arm z). split. 
-    rewrite mapping_preserves_fr. repeat rewrite map_event_Arm_X86_inverse...    
-    rewrite mapping_preserves_mo. repeat rewrite map_event_Arm_X86_inverse...
+    intros execArm Hwf Hatom. unfold atomicity_axiom in Hatom. unfold atomicity_axiom. 
+    unfold not in Hatom. unfold not. intros HatomX86. apply Hatom. 
+    destruct HatomX86 as [x [y [Hevx [Hevy [Hrmwxy Hfrmoxy]]]]]. 
+    simpl in Hevx. simpl in Hevy. destruct Hevx as [x0 [Hx0ev Hx0x]].   
+    destruct Hevy as [y0 [Hy0ev Hy0y]]. subst. exists x0, y0. split; 
+    [|split; [| split]]; eauto. simpl in Hrmwxy. 
+    destruct Hrmwxy as [x1 [y1 [Hrmwx [Hmapx Hmapy]]]]. unfold well_formed in Hwf.
+    destruct Hwf as [Huid [Hpo [Hmo [Hrf Hrmw]]]].   
+    - unfold well_formed_rmw in Hrmw. specialize (Hrmw x1 y1). apply Hrmw in Hrmwx as Hrmw'.
+      destruct Hrmw' as [Hevx1 [Hevy1 _]]. 
+      apply (map_event_Arm_X86_injective execArm) in Hmapx...   
+      apply (map_event_Arm_X86_injective execArm) in Hmapy... subst... 
+    - unfold HahnRelationsBasic.seq in Hfrmoxy. unfold HahnRelationsBasic.seq. 
+      destruct Hfrmoxy as [z [Hfrz Hmoz]]. simpl in Hfrz, Hmoz. 
+      destruct Hmoz as [x1 [y1 [Hmox1y1 [Hzmap Hy1map]]]]. unfold well_formed in Hwf.
+      destruct Hwf as [Huid [Hpo [Hmo [Hrf Hrmw]]]]. unfold well_formed_mo in Hmo.  
+      apply Hmo in Hmox1y1 as Hmo'. destruct Hmo' as [Hevx1 [Hevy1 _]]. 
+      unfold well_formed_rf in Hrf. exists x1. subst. 
+      split; apply (map_event_Arm_X86_injective execArm) in Hy1map; subst... 
+      unfold fr. unfold fr in Hfrz. unfold seq. unfold seq in Hfrz. unfold transp. 
+      unfold transp in Hfrz. destruct Hfrz as [z [Hrfx86 Hmox86]]. simpl in Hrfx86. 
+      simpl in Hmox86. destruct Hrfx86 as [x2 [y2 [Hrfarm [Hzmap Hx0map]]]].
+      apply Hrf in Hrfarm as Hrf'. destruct Hrf' as [Hevx2 [Hevy2 _]]. 
+      destruct Hmox86 as [x3 [y3 [Hmoarm [Hzmap0 Hx1map]]]]. exists x2. subst.
+      apply Hmo in Hmoarm as Hmo'. destruct Hmo' as [Hevx3 [Hevy3 _]].   
+      apply (map_event_Arm_X86_injective execArm) in Hzmap0;     
+      apply (map_event_Arm_X86_injective execArm) in Hx1map;
+      apply (map_event_Arm_X86_injective execArm) in Hx0map; 
+      subst... 
 Qed. 
 
+(*
 (* Unset Printing Notations. *)
 Lemma reads_arent_writes: forall (e: @Event LabelArm LabelClassArm), 
     is_r (event_label e) <-> ~(is_w (event_label e)).
