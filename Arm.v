@@ -32,7 +32,13 @@ Instance LabelClassArm: LabelClass LabelArm := {
                 | R_Acq_Pc _ _ => False
                 | R_Acq _ _    => False 
                 end;
-}. 
+}.
+
+Definition is_ra l := match l with 
+                        | W_Rel _ _    => False 
+                        | R_Acq_Pc _ _ => False 
+                        | R_Acq _ _    => True
+                      end. 
 
 
 (* ARM axiom *)
@@ -44,9 +50,16 @@ Instance LabelClassArm: LabelClass LabelArm := {
 
 Definition R: relation Event := ⦗fun r => is_r (event_label r)⦘.
 Definition W: relation Event := ⦗fun w => is_w (event_label w)⦘.
+Definition RA: relation Event := ⦗fun r => is_ra (event_label r)⦘. 
+
+Definition amo (exec:Execution): relation Event  := 
+    fun e1 e2 => ((rmw exec) e1 e2) /\ is_ra (event_label e1).    
 
 Definition bob_arm (exec: Execution): relation Event := 
-    (R ⨾ (po exec)) ∪ ((po exec) ⨾ W) ∪ ((po exec) ⨾ ⦗dom_rel (rmw exec)⦘) ∪ (⦗codom_rel (rmw exec)⦘ ⨾ (po exec)). 
+    (R ⨾ (po exec)) 
+    ∪ ((po exec) ⨾ W) 
+    ∪ ((po exec) ⨾ ⦗dom_rel (amo exec)⦘) 
+    ∪ (⦗codom_rel (amo exec)⦘ ⨾ (po exec)). 
 
 Definition intervening_write (rel: relation Event): relation Event :=
     rel ⨾ W ⨾ rel.
@@ -64,4 +77,4 @@ Definition ordered_before_axiom_arm (exec: Execution): Prop :=
     irreflexive (ob exec).
 
 Definition arm_consistent (exec: Execution): Prop := 
-    well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_arm exec. 
+    well_formed exec /\ (amo exec) ≡ (rmw exec) /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_arm exec. 
