@@ -30,7 +30,6 @@ Definition internal {Label : Type} {LabelProof : LabelClass Label}
             R exec e1 e2 /\ same_thread e1 e2.
 
 (* External Relation *)
-(* Literally the opposite of internal. *)
 Definition external {Label : Type} {LabelProof : LabelClass Label} 
             (R : Execution  -> Event -> Event -> Prop) (exec : Execution): relation Event :=
         fun e1 e2 => 

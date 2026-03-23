@@ -61,6 +61,15 @@ Definition map_exec_Arm_X86 (execArm:@Execution LabelArm LabelClassArm):@Executi
 |}. 
 (* *************************** Mapping Lemmas ****************************** *)
 
+Lemma map_event_Arm_X86_preserves_same_thread:
+    forall (e1 e2 : @Event LabelArm LabelClassArm),
+    same_thread e1 e2 -> same_thread (map_event_Arm_X86 e1) (map_event_Arm_X86 e2).
+Proof with eauto.
+    intros e1 e2 H.
+    destruct e1; destruct e2; simpl in *; try contradiction.
+    destruct lab; destruct lab0; simpl...
+Qed.
+
 Lemma mapping_preserves_writes_arm: forall (e:@Event LabelArm LabelClassArm), 
     (is_w (event_label e)) 
     <-> 
@@ -148,7 +157,6 @@ Proof.
     simpl.
     destruct e; destruct lab; simpl; reflexivity.
 Qed.
-
 
 Lemma mapping_preserves_value_x86: 
     forall (execX86 : @Execution LabelX86 LabelClassX86)
@@ -864,9 +872,21 @@ Proof with eauto.
                apply (map_event_Arm_X86_injective execArm e0 e0_0 Huid) in He0map...  
                apply (map_event_Arm_X86_injective execArm e1 e1_0 Huid) in He1map...  
                apply (map_event_Arm_X86_injective execArm e0_0 x1 Huid) in Hmapx1...
-               apply (map_event_Arm_X86_injective execArm y1 e1_0 Huid) in Hzmap... 
-               apply (map_event_Arm_X86_injective execArm y1 y2 Huid) in Hmapy2...
- 
+               apply (map_event_Arm_X86_injective execArm e1_0 y1 Huid) in Hmapy1...  
+               apply (map_event_Arm_X86_injective execArm e0_0 y2 Huid) in Hmapy2...
+               subst. repeat split... exists x2. apply arm_consistent_amo_is_rmw... 
+   -- left. left. left. right. unfold external in *. destruct Herf as [HrfX86 HsamethreadX86]. simpl in HrfX86. 
+      destruct HrfX86 as [x0 [y0 [Hrf [Hmapx Hmapy]]]]. unfold well_formed_rf in Hrfwf.
+      assert (HrfArmCopy: (rf execArm) x0 y0). {eauto. } 
+      apply Hrfwf in HrfArmCopy. destruct HrfArmCopy as [Hevx0 [Hevy0 _]]. subst. 
+      apply (map_event_Arm_X86_injective execArm e0 e0_0 Huid) in He0map...  
+      apply (map_event_Arm_X86_injective execArm e1 e1_0 Huid) in He1map...   
+      apply (map_event_Arm_X86_injective execArm e0_0 x0 Huid) in Hmapx...  
+      apply (map_event_Arm_X86_injective execArm e1_0 y0 Huid) in Hmapy... 
+      subst. split... unfold not in *.  intros. apply HsamethreadX86. 
+      apply map_event_Arm_X86_preserves_same_thread... 
+   --          
+
 Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm), 
     well_formed execArm -> ordered_before_axiom_arm execArm -> ordered_before_axiom_x86 (map_exec_Arm_X86 execArm). 
 Proof with eauto.  
