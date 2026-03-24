@@ -958,7 +958,9 @@ Qed.
 
 Theorem semantic_preservation_x86_arm_release_acquire: 
     forall (execArm: @Execution LabelArm LabelClassArm), 
-        arm_consistent execArm -> exists execX86, (x86_consistent execX86) /\ (forall (l:Location) (v:Value), behaviour (execArm) (l, v) <-> behaviour (execX86) (l, v)). 
+        arm_consistent execArm -> 
+            exists execX86, (x86_consistent execX86) 
+            /\ (forall (l:Location) (v:Value), behaviour (execArm) (l, v) <-> behaviour (execX86) (l, v)). 
 Proof with eauto. 
     intros execArm HarmCons. exists (map_exec_Arm_X86 execArm). 
     assert (HarmConsCopy: arm_consistent execArm). { eauto. } 
