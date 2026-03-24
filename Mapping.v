@@ -517,20 +517,13 @@ Proof with eauto.
     destruct Hrf as [x [y [Hrf [Heqx Heqy]]]]; subst.
     destruct (Hwf_rf x y Hrf) as [Hew [Her [Hiw [Hir [Hsl [Hsv Huniq']]]]]].
     split; [| split; [| split; [| split; [| split; [| split]]]]].
-    - (* events w *)
-      simpl. exists x. split...
-    - (* events r *)
-      simpl. exists y. split...
-    - (* is_w *)
-      apply mapping_preserves_writes_arm...
-    - (* is_r *)
-      apply mapping_preserves_reads_arm...
-    - (* same_loc *)
-      apply mapping_preserves_same_loc_arm...
-    - (* same_val *)
-      apply mapping_preserves_same_val_arm...
-    - (* uniqueness *)
-      intros w0 Hw0 Hrf0.
+    - simpl. exists x. split...
+    - simpl. exists y. split...
+    - apply mapping_preserves_writes_arm...
+    - apply mapping_preserves_reads_arm...
+    - apply mapping_preserves_same_loc_arm...
+    - apply mapping_preserves_same_val_arm...
+    - intros w0 Hw0 Hrf0.
       simpl in Hrf0.
       destruct Hrf0 as [x0 [y0 [Hrf0 [Heqx0 Heqy0]]]]; subst.
       destruct (Hwf_rf x0 y0 Hrf0) as [Hew0 [Her0 _]].
@@ -542,8 +535,6 @@ Proof with eauto.
         - exact Hrf0. }
       subst...
 Qed.
-
-
 
 Lemma mapping_preserves_poimm: 
     forall (execArm : @Execution LabelArm LabelClassArm) 
@@ -673,6 +664,11 @@ Proof with eauto.
       apply (map_event_Arm_X86_injective execArm) in Hx0map; 
       subst... 
 Qed.
+
+Lemma mapping_preserves_coherence: forall (execArm:@Execution LabelArm LabelClassArm), 
+    well_formed execArm -> coherence_axiom execArm -> coherence_axiom (map_exec_Arm_X86 execArm). 
+Proof with eauto. 
+Admitted.
 
 Lemma fri_x86_against_po_false: forall (execArm:Execution) (e0 e1:Event),
     arm_consistent execArm 
@@ -936,8 +932,8 @@ Proof with eauto.
       destruct Hevz as [ez [Hevez Heqez]].
       unfold ob.
       eapply t_trans with ez.
-      + apply IH1...
-      + apply IH2... 
+      -- apply IH1...
+      -- apply IH2... 
 Qed. 
 
 Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm), 
@@ -961,14 +957,16 @@ Qed.
 
 Theorem semantic_preservation_x86_arm_release_acquire: 
     forall (execArm: @Execution LabelArm LabelClassArm), 
-        arm_consistent execArm -> exists execX86, (x86_consistent execX86) /\  (behaviour (execArm) = behaviour (execX86)).
+        arm_consistent execArm -> exists execX86, (x86_consistent execX86) /\ (forall (l:Location) (v:Value), behaviour (execArm) (l, v) <-> behaviour (execX86) (l, v)). 
 Proof with eauto. 
-    intros execArm HarmCons. exists (map_exec_Arm_X86 execArm). split.
+    intros execArm HarmCons. exists (map_exec_Arm_X86 execArm). 
     assert (HarmConsCopy: arm_consistent execArm). { eauto. } 
-    unfold arm_consistent in *.  destruct HarmCons as [Hwf [Hamo [Hatom [Hcoh Hob]]]].  
+    unfold arm_consistent in *.  destruct HarmCons as [Hwf [Hamo [Hatom [Hcoh Hob]]]].
+    split.
     - unfold x86_consistent. split; [| split;[| split] ]. 
       apply mapping_preserves_well_formedness...
       apply mapping_preserves_atomicity... 
-      admit.   
-      apply mapping_preserves_ordered_before...          
-Admitted.  
+      apply mapping_preserves_coherence...  
+      apply mapping_preserves_ordered_before... 
+    - intros. apply mapping_preserves_behaviour...  
+Qed.  
