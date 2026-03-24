@@ -685,7 +685,8 @@ Proof with eauto.
     destruct H as [HwfArm [_ [HatomArm [HcohArm _]]]]. unfold well_formed in *. 
     destruct HwfArm as [Huid [Hwfpo [Hwfmo [Hwfrf _]]]]. unfold well_formed_po in *. 
     unfold well_formed_mo in *. unfold well_formed_rf in *. destruct Hwfpo as [Hwfpo _]. 
-    assert (HpoCopy: po execArm x0 y0). { eauto. } assert(HmoCopy: mo execArm x1 y1). { eauto. } 
+    assert (HpoCopy: po execArm x0 y0). { eauto. } 
+    assert (HmoCopy: mo execArm x1 y1). { eauto. } 
     assert (HrfCopy: rf execArm x2 y2). { eauto. }     
     apply Hwfpo in HpoCopy. apply Hwfmo in HmoCopy. apply Hwfrf in HrfCopy. 
     destruct HpoCopy as [Hevx0 Hevy0]. destruct HmoCopy as [Hevx1 [Hevy1 [_ [Hsmelocmo _]]]]. 
@@ -702,7 +703,7 @@ Proof with eauto.
     apply (HcohArm x0). eapply t_trans. 
     - apply t_step. repeat left... 
     - apply t_step. right... 
-Qed.    
+Qed. 
 
 Lemma moi_x86_against_po_false: forall (execArm:Execution) (e0 e1:Event),
     arm_consistent execArm 
