@@ -106,15 +106,14 @@ Definition behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution
 Lemma fr_same_thread_implies_po:
     forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
            (x y : @Event Label LabelProof),
-    uid_unique exec ->
-    well_formed_po exec ->
-    well_formed_mo exec ->
-    well_formed_rf exec ->
+    well_formed exec ->
     fr exec x y ->
     same_thread x y ->
     po exec x y \/ po exec y x.
 Proof with eauto.
-    intros Label LabelProof exec x y Huniq Hwf_po Hwf_mo Hwf_rf Hfr Hst.
+    intros Label LabelProof exec x y Hwf  Hfr Hst.
+    unfold well_formed in Hwf. 
+    destruct Hwf as [Huniq [Hwf_po [Hwf_mo [Hwf_rf _]]]].
     unfold well_formed_po in *. 
     destruct Hwf_po as [Hpo_events [Hpo_connected Hpo_seq]]. 
     destruct x as [uid1 lab1 | uid1 tid1 lab1 ];

@@ -55,3 +55,21 @@ Definition same_val (Label:Type) `{Label:LabelClass Label} (e1 e2:Event): Prop :
 Definition both_write {Label: Type} {LabelProof: LabelClass Label} (e1 e2:Event): Prop := 
   is_w (event_label e1) /\ is_w (event_label e2).
 
+Lemma same_loc_trans:
+    forall {Label: Type} {LabelProof: LabelClass Label}
+           (e1 e2 e3 : @Event Label LabelProof),
+    same_loc e1 e2 -> same_loc e2 e3 -> same_loc e1 e3.
+Proof with eauto.
+    intros Label LabelProof e1 e2 e3 H12 H23.
+    unfold same_loc in *.
+    rewrite H12...
+Qed.
+
+Lemma same_loc_sym:
+    forall {Label: Type} {LabelProof: LabelClass Label}
+           (e1 e2 : @Event Label LabelProof),
+    same_loc e1 e2 -> same_loc e2 e1.
+Proof with eauto.
+    intros Label LabelProof e1 e2 H.
+    unfold same_loc in *...
+Qed. 
