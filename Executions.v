@@ -136,4 +136,31 @@ Proof with eauto.
       unfold both_write in Hbw. destruct Hbw as [_ Hiw2].
       simpl in Hir, Hiw2. exact (is_w_not_is_r _ Hiw2 Hir).    
     - right. apply Hpo_seq. simpl...
+Qed.
+
+Lemma mo_same_thread_implies_po:
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+    mo exec x y ->
+    same_thread x y ->
+    po exec x y \/ po exec y x.
+Proof with eauto.
+    intros Label LabelProof exec x y Hwf Hmo Hst.
+    unfold well_formed in Hwf. 
+    destruct Hwf as [Huniq [Hwf_po [Hwf_mo [Hwf_rf _]]]].
+    unfold well_formed_po in *. 
+    destruct Hwf_po as [Hpo_events [Hpo_connected Hpo_seq]]. 
+    destruct x as [uid1 lab1 | uid1 tid1 lab1 ];
+    destruct y as [uid2 lab2 | uid2 tid2 lab2 ]; 
+    simpl in Hst; try contradiction. 
+    destruct (lt_eq_lt_dec uid1 uid2) as [[Hlt | Heq] | Hgt]. 
+    - left. apply Hpo_seq. simpl...
+    - subst. exfalso.
+      destruct (Hwf_mo (EventThread uid2 tid2 lab1) (EventThread uid2 tid2 lab2) Hmo) 
+        as [Hevx [Hevy [_ [_ Hneq]]]].
+      assert (Heq : EventThread uid2 tid2 lab1 = EventThread uid2 tid2 lab2).
+      { apply Huniq... }
+      apply Hneq. exact Heq.
+    - right. apply Hpo_seq. simpl...
 Qed. 
