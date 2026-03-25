@@ -297,24 +297,6 @@ Proof with eauto.
     intros.  unfold mo. simpl. exists e1, e2...
 Qed.
 
-Lemma mapping_preserves_mo_x86: forall(execX86:@Execution LabelX86 LabelClassX86) (e1X86 e2X86:Event), 
-    (mo execX86) e1X86 e2X86 -> exists e1Arm e2Arm, map_event_X86_Arm execX86 e1X86 e1Arm /\ map_event_X86_Arm execX86 e2X86 e2Arm /\ (mo (map_exec_X86_Arm execX86)) (e1Arm) (e2Arm).  
-Proof with eauto. 
-    intros execX86 e1X86 e2X86 Hmo.
-    unfold map_event_X86_Arm.
-    destruct (classic (dom_rel (rmw execX86) e1X86)) as [Hrmw1 | Hnot1];
-    destruct (classic (dom_rel (rmw execX86) e2X86)) as [Hrmw2 | Hnot2];
-    destruct e1X86; destruct e2X86; destruct lab; destruct lab0.   
-    all: eexists; eexists; repeat split.
-    all: try (right; split; eauto; fail).
-    all: try (left;  split; eauto; fail).
-    all: try (right; split; eauto; fail).
-    all: try (left;  split; eauto; fail).
-    all: simpl; do 2 eexists; repeat split...
-    all: try (right; split; eauto; fail).
-    all: try (left;  split; eauto; fail).
-Qed. 
-
 Lemma mapping_preserves_rf: forall(execArm:@Execution LabelArm LabelClassArm) (e1 e2:Event), 
     (rf execArm) e1 e2 -> (rf (map_exec_Arm_X86 execArm)) (map_event_Arm_X86 e1) (map_event_Arm_X86 e2).  
 Proof with eauto. 
@@ -929,12 +911,7 @@ Proof with eauto.
     - intros a b Heva Hevb Heqx Heqy; subst.
       assert (Hevz : events (map_exec_Arm_X86 execArm) z).
       { destruct (hb_x86_in_events (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) z HwfX86) as [_ Hev]... }
-      simpl in Hevz.
-      destruct Hevz as [ez [Hevez Heqez]].
-      unfold ob.
-      eapply t_trans with ez.
-      -- apply IH1...
-      -- apply IH2... 
+      simpl in Hevz. destruct Hevz as [ez [Hevez Heqez]]. unfold ob. eapply t_trans with ez. apply IH1... apply IH2... 
 Qed. 
 
 Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm), 
@@ -972,4 +949,4 @@ Proof with eauto.
       apply mapping_preserves_coherence...  
       apply mapping_preserves_ordered_before... 
     - intros. apply mapping_preserves_behaviour...  
-Qed.  
+Qed. 
