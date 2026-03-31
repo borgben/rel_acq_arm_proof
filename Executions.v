@@ -127,6 +127,36 @@ Proof with eauto.
     apply HrfWf in Hrf. destruct Hrf as [Hevx [Hevy _]]...  
 Qed.  
 
+Lemma well_formed_mo_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        mo exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hmo. 
+    destruct Hwf as [_ [_ [HmoWf _]] _]. 
+    apply HmoWf in Hmo. destruct Hmo as [Hevx [Hevy _]]...  
+Qed.  
+
+Lemma well_formed_fr_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        fr exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hfr.
+    unfold fr in Hfr.
+    unfold seq in Hfr.
+    unfold transp in Hfr.
+    destruct Hfr as [z [Hrf Hmo]].
+    apply well_formed_rf_events in Hrf...
+    apply well_formed_mo_events in Hmo...
+    destruct Hrf as [_ Hx].
+    destruct Hmo as [_ Hy]...
+Qed.  
+
 Lemma fr_same_thread_implies_po:
     forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
            (x y : @Event Label LabelProof),

@@ -1,5 +1,5 @@
 From RelAcqProof Require Import Executions.
-From RelAcqProof Require Import Events.   
+From RelAcqProof Require Import Events.
 From RelAcqProof Require Import Arm.
 From RelAcqProof Require Import X86.
 From hahn Require Import Hahn.  
@@ -647,9 +647,27 @@ Proof with eauto.
       subst... 
 Qed.
 
+
 Lemma mapping_preserves_coherence: forall (execArm:@Execution LabelArm LabelClassArm), 
     well_formed execArm -> coherence_axiom execArm -> coherence_axiom (map_exec_Arm_X86 execArm). 
-Proof with eauto. 
+Proof with eauto.
+    intros.
+    unfold coherence_axiom in *.
+    unfold acyclic in *.
+    unfold irreflexive in *.
+    intros e_x86 H_x86.
+    pose proof H_x86 as H_x86'.
+    apply coherence_implies_events in H_x86 as [Hevx86 _].
+    simpl in Hevx86.
+    destruct Hevx86 as [e_arm [_ HeMap]].
+    specialize H0 with e_arm.
+    apply H0.
+
+
+    (* set (exec_x86 := map_exec_Arm_X86 execArm).
+    assert (Hwf_x86: well_formed (map_exec_Arm_X86 execArm)). 
+    { apply mapping_preserves_well_formedness... }
+    specialize H0 with (map_event_X86_Arm exec_x86 e_x86). *)
 Admitted.
 
 Lemma fri_x86_against_po_false: forall (execArm:Execution) (e0 e1:Event),
