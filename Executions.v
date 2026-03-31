@@ -103,6 +103,19 @@ Definition behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution
       lab_val (event_label e) = v /\
       ~(exists (e': Event), (X.(mo) e e')).
 
+
+Lemma well_formed_po_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        po exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hpo. 
+    destruct Hwf as [Huid [[HpoWf _] _]]. eauto.
+Qed.   
+
+
 Lemma fr_same_thread_implies_po:
     forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
            (x y : @Event Label LabelProof),
