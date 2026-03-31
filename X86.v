@@ -58,25 +58,26 @@ Definition hb_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution
 Definition ordered_before_axiom_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
     irreflexive (hb_x86 exec).  
 
-Definition x86_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
-    well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_x86 exec.
+Record X86Consistent(exec: Execution) := {
+    x86c_atom : atomicity_axiom exec; 
+    x86c_coh  : coherence_axiom exec;
+    x86_ob    : ordered_before_axiom_x86 exec
+}. 
 
-Lemma same_thread_dec_x86:
-    forall (e1 e2 : @Event LabelX86 LabelClassX86),
+Record X86ConsistentExecution: Type := {
+    exec_x86 :> @WellFormedExecution LabelX86 LabelClassX86; 
+    x86_cons: X86Consistent exec_x86; 
+}.
+
+Lemma same_thread_dec_x86: forall (e1 e2 :Event),
     {same_thread e1 e2} + {~ same_thread e1 e2}.
 Proof with eauto.
     intros e1 e2.
-    destruct e1; destruct e2; simpl.
-    - right...
-    - right...
-    - right...
-    - destruct (Nat.eq_dec tid tid0).
-      left...
-      right...
+    destruct e1; destruct e2. all:try(eauto). 
+    destruct (Nat.eq_dec tid tid0); eauto. 
 Qed. 
 
-Lemma not_w_r_implies_other_cases_x86:
-    forall (x y : @Event LabelX86 LabelClassX86),
+Lemma not_w_r_implies_other_cases_x86: forall (x y: Event),
     ~ (is_w (event_label x) /\ is_r (event_label y)) ->
         (is_w (event_label x) /\ is_w (event_label y)) 
         \/ (is_r (event_label x) /\ is_r (event_label y)) 

@@ -48,10 +48,12 @@ Definition poloc {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): 
 Definition poimm {Label: Type} {LabelProof: LabelClass Label} (exec:Execution) : relation Event  := 
     fun e1 e2 =>  ((po exec) e1 e2) /\ ~(exists e3, ((po exec) e1 e3) /\ ((po exec) e3 e2)).
 
+(* Uniqueness of Event Id's. *)
 Definition uid_unique {Label: Type} {LabelProof: LabelClass Label} (exec : Execution) : Prop :=
     forall e1 e2, events exec e1 -> events exec e2 -> 
         event_uid e1 = event_uid e2 -> e1 = e2. 
 
+(* Expresses that a po can only exist between events in an execution and only between events which are seq_before. *)
 Definition well_formed_po {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop :=
     (forall e1 e2, po exec e1 e2 -> events exec e1 /\ events exec e2) 
     /\ 
@@ -66,7 +68,8 @@ Definition well_formed_mo {Label: Type} {LabelProof: LabelClass Label} (exec:Exe
 (* Expresses that an rf relation can only exist between a write and a read on the same location, 
    with the same value, uid < uid'and that a read can only be from a single write *)
 Definition well_formed_rf {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
-    forall (w r:Event),  (rf exec) w r -> (events exec) w /\ (events exec) r 
+    forall (w r:Event),  (rf exec) w r ->    (events exec) w 
+                                          /\ (events exec) r 
                                           /\ is_w (event_label w) 
                                           /\ is_r (event_label r)
                                           /\ same_loc w r 
@@ -75,25 +78,42 @@ Definition well_formed_rf {Label: Type} {LabelProof: LabelClass Label} (exec:Exe
 
 (* Expresses that a read modify write relation can only exist between immediate reads and writes on the same location. *)
 Definition well_formed_rmw {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
-    forall (r w:Event), (rmw exec) r w -> (events exec) r /\ (events exec) w
+    forall (r w:Event), (rmw exec) r w ->    (events exec) r 
+                                          /\ (events exec) w
                                           /\ is_r (event_label r) 
                                           /\ is_w (event_label w)
                                           /\ (poimm exec) r w
                                           /\ same_loc r w. 
 
 (* Predicate to express well-formedness on an execution graph. *)
-Definition well_formed {Label: Type} {LabelProof: LabelClass Label} (exec:Execution): Prop := 
-    uid_unique exec /\ well_formed_po exec /\ well_formed_mo exec /\ well_formed_rf exec /\ well_formed_rmw exec. 
+Record WellFormed {Label: Type} {LabelProof: LabelClass Label} (exec:Execution) := {
+    uniq: uid_unique exec;
+    wfpo: well_formed_po exec; 
+    wfmo: well_formed_mo exec; 
+    wfrf: well_formed_rf exec; 
+    wfrmw: well_formed_rmw exec 
+}.
+
+(* Well-Formed Execution Type *)
+Record WellFormedExecution {Label:Type} {LabelProof: LabelClass Label}: Type := {
+    exec :> @Execution Label LabelProof; 
+    wf   : WellFormed exec; 
+}.
 
 (* Define atomicity and coherence axioms because they are generic across the two itegrations *)
 Definition atomicity_axiom {Label: Type} {LabelProof : LabelClass Label} (e: Execution): Prop :=
-    ~(exists (x y: Event), (events e) x /\ (events e) y  (* x and y are from the execution *)
+    ~(exists (x y: Event),    (events e) x 
+                           /\ (events e) y               (* x and y are from the execution *)
                            /\ (rmw e) x y                (* x and y are in rmw *)
                            /\ ((fr e) ⨾ (mo e)) x y).     (* x and y are in rmw *)
 
+Definition coherence_chain {Label: Type} {LabelProof: LabelClass Label} (exec: Execution) := 
+     ((poloc exec) ∪ (rf exec) ∪ (mo exec) ∪ (fr exec))⁺ . 
+
 Definition coherence_axiom {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop :=
-    acyclic ((poloc exec) ∪ (rf exec) ∪ (mo exec) ∪ (fr exec)).
-    
+    irreflexive (coherence_chain exec).  
+   
+(* Defining behaviour, again this is execution agnostic. *)
 Definition behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution) : Location * Value -> Prop :=
   fun '(l,v) =>
     exists e,
@@ -103,18 +123,20 @@ Definition behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution
       lab_val (event_label e) = v /\
       ~(exists (e': Event), (X.(mo) e e')).
 
-Lemma fr_same_thread_implies_po:
-    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
-           (x y : @Event Label LabelProof),
-    well_formed exec ->
+(* Defining a Predicate to Express that a Relation is part of the Coherence Axiom *)
+Definition sub_coherence {Label: Type} {LabelProof: LabelClass Label} (exec:WellFormedExecution) (R: relation Event) := 
+    forall e0 e1, 
+        R e0 e1 -> 
+            (coherence_chain exec) e0 e1 /\ exists uid0 tid0 lab0 uid1 tid1 lab1, e0 = EventThread uid0 tid0 lab0 /\ e1 = EventThread uid1 tid1 lab1.
+
+
+Lemma fr_same_thread_implies_po: forall {Label: Type} {LabelProof : LabelClass Label} (exec:WellFormedExecution) (x y: Event),
     fr exec x y ->
-    same_thread x y ->
-    po exec x y \/ po exec y x.
-Proof with eauto.
-    intros Label LabelProof exec x y Hwf  Hfr Hst.
-    unfold well_formed in Hwf. 
-    destruct Hwf as [Huniq [Hwf_po [Hwf_mo [Hwf_rf _]]]].
-    unfold well_formed_po in *. 
+        same_thread x y ->
+            po exec x y \/ po exec y x.
+Proof with eauto. 
+    intros Label LabelProof exec x y  Hfr Hst. 
+    destruct exec.(wf) as [Huniq [Hwf_po [Hwf_mo [Hwf_rf _]]]]. 
     destruct Hwf_po as [Hpo_events [Hpo_connected Hpo_seq]]. 
     destruct x as [uid1 lab1 | uid1 tid1 lab1 ];
     destruct y as [uid2 lab2 | uid2 tid2 lab2 ]; 
@@ -138,18 +160,13 @@ Proof with eauto.
     - right. apply Hpo_seq. simpl...
 Qed.
 
-Lemma mo_same_thread_implies_po:
-    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
-           (x y : @Event Label LabelProof),
-    well_formed exec ->
+Lemma mo_same_thread_implies_po: forall {Label: Type} {LabelProof : LabelClass Label} (exec:WellFormedExecution) (x y :Event),
     mo exec x y ->
-    same_thread x y ->
-    po exec x y \/ po exec y x.
+        same_thread x y ->
+            po exec x y \/ po exec y x. 
 Proof with eauto.
-    intros Label LabelProof exec x y Hwf Hmo Hst.
-    unfold well_formed in Hwf. 
-    destruct Hwf as [Huniq [Hwf_po [Hwf_mo [Hwf_rf _]]]].
-    unfold well_formed_po in *. 
+    intros Label LabelProof exec x y Hmo Hst.
+    destruct exec.(wf) as [Huniq [Hwf_po [Hwf_mo [Hwf_rf _]]]].
     destruct Hwf_po as [Hpo_events [Hpo_connected Hpo_seq]]. 
     destruct x as [uid1 lab1 | uid1 tid1 lab1 ];
     destruct y as [uid2 lab2 | uid2 tid2 lab2 ]; 
