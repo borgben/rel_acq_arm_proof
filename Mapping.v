@@ -72,11 +72,9 @@ Qed.
 
 Lemma map_event_Arm_X86_preserves_same_thread:
     forall (e1 e2 : @Event LabelArm LabelClassArm),
-    same_thread e1 e2 -> same_thread (map_event_Arm_X86 e1) (map_event_Arm_X86 e2).
+    same_thread e1 e2 <-> same_thread (map_event_Arm_X86 e1) (map_event_Arm_X86 e2).
 Proof with eauto.
-    intros e1 e2 H.
-    destruct e1; destruct e2; simpl in *; try contradiction.
-    destruct lab; destruct lab0; simpl...
+    split; intros H; destruct e1, e2; destruct lab,lab0; simpl in *...  
 Qed.
 
 Lemma mapping_preserves_writes_arm: forall (e:@Event LabelArm LabelClassArm), 
@@ -886,15 +884,178 @@ Proof with eauto.
    repeat rewrite <- mapping_preserves_writes_arm in Hnot. 
    repeat rewrite <- mapping_preserves_reads_arm in Hnot. 
    subst. destruct Hnot as [[_ Hww] | [[Hrr _] | [Hr _]]]. 
-   left. left. right. 
-   unfold seq. 
-   exists y0;
-   repeat split...
-   all:try(repeat left;
-   unfold seq; 
-   exists x0; 
-   repeat split; eauto).
-Qed.                      
+   left. left. right. unfold seq. exists y0; repeat split...
+   all:try(repeat left; unfold seq; exists x0; repeat split; eauto).
+Qed.
+
+
+Lemma implid_x86_maps_to_bob_arm : 
+    forall (execArm : @Execution LabelArm LabelClassArm)
+           (e0 e1 : @Event LabelArm LabelClassArm),
+        arm_consistent execArm -> 
+            well_formed (map_exec_Arm_X86 execArm) ->
+                (events execArm) e0 ->
+                    (events execArm) e1 -> 
+                        implid_x86 (map_exec_Arm_X86 execArm) 
+                            (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) ->
+                                    bob_arm execArm e0 e1.
+Proof with eauto.  
+   intros execArm e0 e1 HarmCons HwfX86 Heve0 Heve1 Himp. 
+   destruct HarmCons as [Hwf [Hamo _]]. 
+   pose proof Hwf as Hwf'.
+   destruct Hwf' as [Huid _].   
+   unfold implid_x86, bob_arm in *.  
+   destruct Himp as [[z [Hpo Hrmw]] | [z [Hrmw Hpo]]];
+   unfold seq, eqv_rel, dom_rel, codom_rel in *; 
+   simpl in Hpo, Hrmw;  
+   destruct Hrmw as [[Hzmap [w [x0 [y0 [Hrmw [Hmapx0 Hmapy0]]]]] ] | [Hzmap [w [x0 [y0 [Hrmw [Hmapx0 Hmapy0]]]]]]];  
+   destruct Hpo as [x [y [Hpo [Hmape0 Hmapz]]]]; 
+   pose proof (well_formed_po_events _ _ Hwf Hpo) as [Hevx Hevy]; 
+   pose proof (well_formed_rmw_events _ _ Hwf Hrmw) as [Hevx0 Hevy0];
+   pose proof (well_formed_rmw_po _ _ Hwf Hrmw) as HpoRmw; subst. 
+    --  apply (map_event_Arm_X86_injective execArm) in Hzmap, Hmape0, Hmapx0... 
+        subst. left. right. exists x0. repeat split... 
+        exists y0. apply arm_consistent_amo_is_rmw... 
+    --  apply well_formed_codom_rmw_write in Hrmw...   
+        apply (map_event_Arm_X86_injective execArm) in Hzmap, Hmape0, Hmapy0...
+        subst. left. left. right. exists y0.  repeat split...
+    --  apply (map_event_Arm_X86_injective execArm) in Hmapz, Hmape0, Hmapx0...
+        apply well_formed_dom_rmw_read in Hrmw...  
+        subst. left. left. left. exists x. repeat split...
+    --  apply (map_event_Arm_X86_injective execArm) in Hmapz, Hmape0, Hmapy0... 
+        subst. right. exists x.  repeat split... 
+        exists x0.  apply arm_consistent_amo_is_rmw... 
+Qed.
+
+Lemma rfe_x86_maps_to_rfe_arm : 
+    forall (execArm : @Execution LabelArm LabelClassArm)
+           (e0 e1 : @Event LabelArm LabelClassArm),
+        arm_consistent execArm -> 
+            well_formed (map_exec_Arm_X86 execArm) ->
+                (events execArm) e0 ->
+                    (events execArm) e1 -> 
+                       external rf (map_exec_Arm_X86 execArm) 
+                            (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) ->
+                                   external rf execArm e0 e1. 
+Proof with eauto.  
+    intros execArm e0 e1 [Hwf _] HwfX86 Heve0 Heve1 [HrfX86 Hnotst].
+    rewrite <- map_event_Arm_X86_preserves_same_thread in Hnotst. 
+    simpl in HrfX86. destruct HrfX86 as [x [y [Hrf [Hmape0x Hmape1y]]]].
+    pose proof Hrf as Hrf'. pose proof Hwf as Hwf'. destruct Hwf' as [Huid _]. 
+    apply well_formed_rf_events in Hrf' as [Hevx Hevy]... 
+    apply (map_event_Arm_X86_injective execArm) in Hmape0x, Hmape1y... 
+    subst. split...   
+Qed.
+
+Lemma moe_x86_maps_to_moe_arm : 
+    forall (execArm : @Execution LabelArm LabelClassArm)
+           (e0 e1 : @Event LabelArm LabelClassArm),
+        arm_consistent execArm -> 
+            well_formed (map_exec_Arm_X86 execArm) ->
+                (events execArm) e0 ->
+                    (events execArm) e1 -> 
+                       external mo (map_exec_Arm_X86 execArm) 
+                            (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) ->
+                                   external mo execArm e0 e1. 
+Proof with eauto.  
+    intros execArm e0 e1 [Hwf _] HwfX86 Heve0 Heve1 [HmoX86 Hnotst].
+    rewrite <- map_event_Arm_X86_preserves_same_thread in Hnotst.  
+    simpl in HmoX86. destruct HmoX86 as [x [y [Hmo [Hmape0x Hmape1y]]]].
+    pose proof Hmo as Hmo'. pose proof Hwf as Hwf'. destruct Hwf' as [Huid _]. 
+    apply well_formed_mo_events in Hmo' as [Hevx Hevy]... 
+    apply (map_event_Arm_X86_injective execArm) in Hmape0x, Hmape1y... 
+    subst. split...   
+Qed.
+
+Lemma fre_x86_maps_to_fre_arm : 
+    forall (execArm : @Execution LabelArm LabelClassArm)
+           (e0 e1 : @Event LabelArm LabelClassArm),
+        arm_consistent execArm -> 
+            well_formed (map_exec_Arm_X86 execArm) ->
+                (events execArm) e0 ->
+                    (events execArm) e1 -> 
+                       external fr (map_exec_Arm_X86 execArm) 
+                            (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) ->
+                                   external fr execArm e0 e1. 
+Proof with eauto.  
+    intros execArm e0 e1 [Hwf _] HwfX86 Heve0 Heve1 [[w [HrfX86 HmoX86]] Hnotst].
+    unfold transp in *. 
+    rewrite <- map_event_Arm_X86_preserves_same_thread in Hnotst.  
+    simpl in HrfX86. destruct HrfX86 as [x [y [Hrf [Hmape0x Hmape1y]]]].
+    simpl in HmoX86. destruct HmoX86 as [x1 [y1 [Hmo [Hmape0x1 Hmape1y1]]]]. 
+    pose proof Hrf as Hrf'. pose proof Hmo as Hmo'.  
+    pose proof Hwf as Hwf'. destruct Hwf' as [Huid _]. 
+    subst. apply well_formed_rf_events in Hrf' as [Hevx Hevy]...
+    apply well_formed_mo_events in Hmo' as [Hevx1 Hevy1]...
+    apply (map_event_Arm_X86_injective execArm) in Hmape0x1, Hmape1y1, Hmape1y...  
+    subst... split... unfold fr, seq, transp. exists x1. split...     
+Qed.
+
+Lemma fri_x86_maps_to_bob_arm : 
+    forall (execArm : @Execution LabelArm LabelClassArm)
+           (e0 e1 : @Event LabelArm LabelClassArm),
+        arm_consistent execArm -> 
+            well_formed (map_exec_Arm_X86 execArm) ->
+                (events execArm) e0 ->
+                    (events execArm) e1 -> 
+                       internal fr (map_exec_Arm_X86 execArm) 
+                            (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) ->
+                                   bob_arm execArm e0 e1. 
+Proof with eauto.  
+    intros execArm e0 e1 HarmCons HwfX86 Heve0 Heve1 [HfrX86 Hst].
+    pose proof HarmCons as HarmCons'. destruct HarmCons' as [Hwf _ ]. 
+    assert (Hpodis: po (map_exec_Arm_X86 execArm) (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) 
+                \/  po (map_exec_Arm_X86 execArm) (map_event_Arm_X86 e1) (map_event_Arm_X86 e0)). 
+    { apply fr_same_thread_implies_po in HfrX86...  } 
+    pose proof HfrX86 as HfrX86'. destruct HfrX86 as [w [HrfX86 HmoX86]]. 
+    pose proof Hwf as Hwf'. destruct Hwf' as [Huid _]. unfold transp in *. simpl in Hpodis, HrfX86, HmoX86. 
+    destruct HrfX86 as [x0 [y0 [Hrf [Hmapwx0 Hmape0y0]]]]. 
+    destruct HmoX86 as [x1 [y1 [Hmo [Hmapwx1 Hmape1y1]]]].
+    pose proof Hmo as Hmo'. 
+    apply well_formed_mo_events in Hmo' as [Hevx1 Hevy1]...
+    apply well_formed_rf_events in Hrf as [Hevx0 Hevy0]...  subst. 
+    apply (map_event_Arm_X86_injective execArm) in Hmapwx1, Hmape1y1, Hmape0y0...   
+    destruct Hpodis as [[x2 [y2 [Hpo [Hmape0x2 Hmape1y2]]]] | Hcontra]. 
+    - pose proof Hpo as Hpo'.
+      apply well_formed_mo_write_r in Hmo...   
+      apply well_formed_po_events in Hpo' as [Hevx2 Hevy2]... subst. 
+      apply (map_event_Arm_X86_injective execArm) in Hmape0x2, Hmape1y2... subst. 
+      left. left. right. unfold seq. exists y2. split... unfold W. unfold eqv_rel. 
+      split...
+    -  apply fri_x86_against_po_false in Hcontra... exfalso... unfold internal. split... 
+Qed. 
+
+Lemma moi_x86_maps_to_bob_arm : 
+    forall (execArm : @Execution LabelArm LabelClassArm)
+           (e0 e1 : @Event LabelArm LabelClassArm),
+        arm_consistent execArm -> 
+            well_formed (map_exec_Arm_X86 execArm) ->
+                (events execArm) e0 ->
+                    (events execArm) e1 -> 
+                       internal mo (map_exec_Arm_X86 execArm) 
+                            (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) ->
+                                   bob_arm execArm e0 e1. 
+Proof with eauto.  
+    intros execArm e0 e1 HarmCons HwfX86 Heve0 Heve1 [HmoX86 Hst]. 
+    pose proof HarmCons as HarmCons'. destruct HarmCons' as [Hwf _ ]. 
+    assert (Hpodis: po (map_exec_Arm_X86 execArm) (map_event_Arm_X86 e0) (map_event_Arm_X86 e1) 
+                \/  po (map_exec_Arm_X86 execArm) (map_event_Arm_X86 e1) (map_event_Arm_X86 e0)). 
+    { apply mo_same_thread_implies_po in HmoX86...  } 
+    pose proof HmoX86 as HmoX86'. 
+    pose proof Hwf as Hwf'. destruct Hwf' as [Huid _]. unfold transp in *. simpl in Hpodis, HmoX86. 
+    destruct HmoX86 as [x1 [y1 [Hmo [Hmapwx1 Hmape1y1]]]].
+    pose proof Hmo as Hmo'. 
+    apply well_formed_mo_events in Hmo' as [Hevx1 Hevy1]... subst. 
+    apply (map_event_Arm_X86_injective execArm) in Hmapwx1, Hmape1y1...  subst.  
+    destruct Hpodis as [[x2 [y2 [Hpo [Hmape0x2 Hmape1y2]]]] | Hcontra]. 
+    - pose proof Hpo as Hpo'.
+      apply well_formed_mo_write_r in Hmo...   
+      apply well_formed_po_events in Hpo' as [Hevx2 Hevy2]... subst. 
+      apply (map_event_Arm_X86_injective execArm) in Hmape0x2, Hmape1y2... subst. 
+      left. left. right. unfold seq. exists y2. split... unfold W. unfold eqv_rel. 
+      split... 
+    -  apply moi_x86_against_po_false in Hcontra... exfalso... unfold internal. split... 
+Qed. 
 
 Lemma hb_x86_mapped_implies_ob_arm :
     forall (execArm : @Execution LabelArm LabelClassArm)
@@ -908,167 +1069,33 @@ Lemma hb_x86_mapped_implies_ob_arm :
                                     ob execArm e0 e1. 
 Proof with eauto. 
     intros execArm e0 e1 Harmcons HwfX86 Hev0 Hev1 HhbX86.
-    assert (HarmconsCopy: arm_consistent execArm)...
-    destruct HarmconsCopy as [HwfArm [Hamo _]].
-    assert (HwfArmCopy: well_formed execArm)...
-    destruct HwfArmCopy as [Huid [Hpowf [Hmowf [Hrfwf Hrmwwf]]]].
     assert (Hgen : forall (a b : @Event LabelArm LabelClassArm),
-        events execArm a ->
-        events execArm b ->
-        hb_x86 (map_exec_Arm_X86 execArm)
-            (map_event_Arm_X86 a) (map_event_Arm_X86 b) ->
-        ob execArm a b). 
+        events execArm a -> events execArm b ->
+            hb_x86 (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) (map_event_Arm_X86 b) 
+                -> ob execArm a b). 
     2: { apply Hgen... } 
     intros a b Heva Hevb Hhb.
     unfold hb_x86 in Hhb.
     remember (map_event_Arm_X86 a) as x eqn:Heqx.
     remember (map_event_Arm_X86 b) as y eqn:Heqy.
-    revert a b Heva Hevb Heqx Heqy.
+    revert a b Heva Hevb Heqx Heqy. 
     induction Hhb as [x y Hbase | x z y Hhb1 IH1 Hhb2 IH2]. 
     - intros a b Heva Hevb Heqx Heqy.
-      rename a into e0_0. rename b into e1_0.
-      rename Heva into Heve0. rename Hevb into Heve1.
-      rename Heqx into He0map. rename Heqy into He1map.
-      symmetry in He0map. symmetry in He1map.
-      unfold ob.
       destruct Hbase as [[[[Hppo|Himp]|Herf]|Hfr]|Hmo]. 
       -- subst. left. left. left. left. right. apply ppo_x86_maps_to_bob_arm...       
-      -- subst. unfold implid_x86 in *. destruct Himp as [HimpPo | HimpRmw ]. 
-      --- unfold seq in HimpPo. destruct HimpPo as [z [HimpPo HimpRmw]]. left. 
-          left. left. left. right. unfold bob_arm.  destruct HimpRmw as [HdomRmw | HcodomRmw]. 
-          ---- unfold eqv_rel in HdomRmw. destruct HdomRmw as [Hzmap HdomRel]. simpl in HimpPo. 
-               destruct HimpPo as [x1 [y1 [HpoArm [Hmapx1 Hmapy1]]]]. subst. left. right. unfold seq.  
-               unfold eqv_rel. exists y1. unfold dom_rel in *. destruct HdomRel as [z HrmwArm]. 
-               simpl in HrmwArm. destruct HrmwArm as [x2 [y2 [HrmwArm [Hmapx2 Hmapy2]]]].
-               assert (HrmwArmCopy: (rmw execArm) x2 y2). {eauto. } 
-               assert (HpoArmCopy: (po execArm) x1 y1). {eauto. }
-               unfold well_formed_rmw in Hrmwwf. apply Hrmwwf in HrmwArmCopy as [Hevx2 [Hevy2 _]].
-               unfold well_formed_po in Hpowf. destruct Hpowf as [Hpowf _]. apply Hpowf in HpoArmCopy as [Hevx1 Hevy1].  
-               apply (map_event_Arm_X86_injective execArm e0_0 x1 Huid) in Hmapx1...
-               apply (map_event_Arm_X86_injective execArm y1 e1_0 Huid) in Hzmap...
-               apply (map_event_Arm_X86_injective execArm y1 x2 Huid) in Hmapx2... 
-               subst. repeat split... exists y2. apply arm_consistent_amo_is_rmw... 
-          ---- unfold eqv_rel in HcodomRmw. destruct HcodomRmw as [Hzmap HcodomRel]. simpl in HimpPo.
-               destruct HimpPo as [x1 [y1 [HpoArm [Hmapx1 Hmapy1]]]]. subst. left. left. right.  unfold seq.  
-               unfold eqv_rel. exists y1. unfold codom_rel in *. destruct HcodomRel as [z HrmwArm]. 
-               simpl in HrmwArm. destruct HrmwArm as [x2 [y2 [HrmwArm [Hmapx2 Hmapy2]]]]. 
-               assert (HrmwArmCopy: (rmw execArm) x2 y2). {eauto. } 
-               assert (HpoArmCopy: (po execArm) x1 y1). {eauto. } 
-               unfold well_formed_rmw in Hrmwwf. apply Hrmwwf in HrmwArmCopy as [Hevx2 [Hevy2 [_ [Hw _]]]]. 
-               unfold well_formed_po in Hpowf. destruct Hpowf as [Hpowf _]. apply Hpowf in HpoArmCopy as [Hevx1 Hevy1].  
-               apply (map_event_Arm_X86_injective execArm e0_0 x1 Huid) in Hmapx1...
-               apply (map_event_Arm_X86_injective execArm y1 e1_0 Huid) in Hzmap... 
-               apply (map_event_Arm_X86_injective execArm y1 y2 Huid) in Hmapy2... 
-               subst. repeat split... 
-      --- unfold seq in HimpRmw. destruct HimpRmw as [z [HimpRmw HimpPo]].
-          left. left. left. left. right. unfold bob_arm. destruct HimpRmw as [HdomRmw | HcodomRmw].
-          ---- unfold eqv_rel in HdomRmw. destruct HdomRmw as [Hzmap HdomRel]. simpl in HimpPo. 
-               destruct HimpPo as [x1 [y1 [HpoArm [Hmapx1 Hmapy1]]]]. subst. unfold dom_rel in HdomRel.
-               destruct HdomRel as [z HdomRel]. simpl in HdomRel. destruct HdomRel as [x0 [y0 [HrmwArm [Hmapx0 Hmapy0]]]].
-               repeat left.  unfold seq. unfold eqv_rel. exists x1. unfold dom_rel. unfold R.   
-               assert (HrmwArmCopy: (rmw execArm) x0 y0). {eauto. } 
-               assert (HpoArmCopy: (po execArm) x1 y1). {eauto. } 
-               unfold well_formed_rmw in Hrmwwf. apply Hrmwwf in HrmwArmCopy as [Hevx0 [Hevy0 [Hr _]]].  
-               unfold well_formed_po in Hpowf. destruct Hpowf as [Hpowf _]. apply Hpowf in HpoArmCopy as [Hevx1 Hevy1].   
-               apply (map_event_Arm_X86_injective execArm e0_0 x1 Huid) in Hmapx1...
-               apply (map_event_Arm_X86_injective execArm e1_0 y1 Huid) in Hmapy1...
-               apply (map_event_Arm_X86_injective execArm e0_0 x0 Huid) in Hmapx0... 
-               subst. repeat split... 
-          ---- right. unfold seq in *. unfold eqv_rel in *. destruct HcodomRmw as [Hzmap HcodomRel]. simpl in HimpPo.
-               destruct HimpPo as [x1 [y1 [HpoArm [Hmapx1 Hmapy1]]]]. subst. exists x1. unfold codom_rel in *.
-               destruct HcodomRel as [z HrmwArm]. simpl in HrmwArm.  destruct HrmwArm as [x2 [y2 [HrmwArm [Hmapx2 Hmapy2]]]]. 
-               assert (HrmwArmCopy: (rmw execArm) x2 y2). {eauto. } 
-               assert (HpoArmCopy: (po execArm) x1 y1). {eauto. } 
-               unfold well_formed_rmw in Hrmwwf. apply Hrmwwf in HrmwArmCopy as [Hevx2 [Hevy2 [_ [Hw _]]]]. 
-               unfold well_formed_po in Hpowf. destruct Hpowf as [Hpowf _]. apply Hpowf in HpoArmCopy as [Hevx1 Hevy1].  
-               apply (map_event_Arm_X86_injective execArm e0_0 x1 Huid) in Hmapx1...
-               apply (map_event_Arm_X86_injective execArm e1_0 y1 Huid) in Hmapy1...  
-               apply (map_event_Arm_X86_injective execArm e0_0 y2 Huid) in Hmapy2...
-               subst. repeat split... exists x2. apply arm_consistent_amo_is_rmw... 
-       -- left. left. left. right. unfold external in *. destruct Herf as [HrfX86 HsamethreadX86]. simpl in HrfX86. 
-        destruct HrfX86 as [x0 [y0 [Hrf [Hmapx Hmapy]]]]. unfold well_formed_rf in Hrfwf.
-        assert (HrfArmCopy: (rf execArm) x0 y0). {eauto. } 
-        apply Hrfwf in HrfArmCopy. destruct HrfArmCopy as [Hevx0 [Hevy0 _]]. subst.    
-        apply (map_event_Arm_X86_injective execArm e0_0 x0 Huid) in He0map...  
-        apply (map_event_Arm_X86_injective execArm e1_0 y0 Huid) in He1map... 
-        subst. split... unfold not in *.  intros. apply HsamethreadX86. 
-        apply map_event_Arm_X86_preserves_same_thread... 
-       -- destruct (same_thread_dec_x86 x y). 
-      --- left. left. left. left. right. unfold bob_arm. left. left. left. unfold seq. 
-          unfold seq in *. unfold transp in *. assert (Hpodis: po (map_exec_Arm_X86 execArm) x y \/  po (map_exec_Arm_X86 execArm) y x).
-          { apply fr_same_thread_implies_po in Hfr...  }
-          destruct Hpodis as [Hpo | Hcontra]. 
-          ---- simpl in Hpo. destruct Hpo as [x0 [y0 [Hpo [Hx0map Hy0map]]]]. 
-               unfold fr in Hfr.  unfold seq in *. unfold transp in *. 
-               destruct Hfr as [z [Hrf Hmo]]. simpl in Hrf. simpl in Hmo. 
-               destruct Hrf as [x1 [y1 [Hrf [Hx1map Hy1map]]]]. 
-               destruct Hmo as [x2 [y2 [Hmo [Hx2map Hy2map]]]]. 
-               exists x0. unfold well_formed_po in *. unfold well_formed_mo in *. 
-               unfold well_formed_rf in *. 
-               assert (HpoCopy: po execArm x0 y0). { eauto. } 
-               assert (HmoCopy: mo execArm x2 y2). { eauto. } 
-               assert (HrfCopy: rf execArm x1 y1). { eauto. } 
-               destruct Hpowf as [Hpowf _]. apply Hpowf in HpoCopy. destruct HpoCopy as [Hevx0 Hevy0]. 
-               apply Hrfwf in HrfCopy. destruct HrfCopy as [Hevx1 [Hevy1 [ _ [Hry1 _]]]].
-               apply Hmowf in HmoCopy. destruct HmoCopy as [Hevx2 [Hevy2 _]]. subst. 
-               apply (map_event_Arm_X86_injective execArm e0_0 y1 Huid) in He0map...  
-               apply (map_event_Arm_X86_injective execArm e1_0 y2 Huid) in He1map... 
-               apply (map_event_Arm_X86_injective execArm y1 x0 Huid) in Hx0map...
-               apply (map_event_Arm_X86_injective execArm y2 y0 Huid) in Hy0map... 
-               subst. unfold R. unfold eqv_rel. split...   
-          ---- apply fri_x86_against_po_false in Hcontra... exfalso... 
-               unfold internal. split...
-      --- left. right. unfold external. unfold fr in *. unfold seq in *. unfold transp in *. 
-          destruct Hfr as [z [Hrfx86 Hmox86]]. simpl in Hrfx86, Hmox86. 
-          destruct Hrfx86 as [x0 [y0 [Hrf [Hx0map Hy0map]]]].         
-          destruct Hmox86 as [x1 [y1 [Hmo [Hx1map Hy1map]]]]. 
-          subst. unfold well_formed_mo in *. unfold well_formed_rf in *. 
-          assert (HrfCopy: rf execArm x0 y0). { eauto. }  
-          assert (HmoCopy: mo execArm x1 y1). { eauto. } 
-          apply Hrfwf in HrfCopy. destruct HrfCopy as [Hevx0 [Hevy0 _]].
-          apply Hmowf in HmoCopy. destruct HmoCopy as [Hevx1 [Hevy1 _]].      
-          apply (map_event_Arm_X86_injective execArm e0_0 y0 Huid) in He0map...  
-          apply (map_event_Arm_X86_injective execArm e1_0 y1 Huid) in He1map...   
-          apply (map_event_Arm_X86_injective execArm x0 x1 Huid) in Hx1map... 
-          subst. split. exists x1... unfold not in *. intros. apply n. 
-          apply map_event_Arm_X86_preserves_same_thread... 
+      -- subst. left. left. left. left. right. apply implid_x86_maps_to_bob_arm... 
+      -- subst. left. left. left. right. apply rfe_x86_maps_to_rfe_arm...  
       -- destruct (same_thread_dec_x86 x y). 
-         --- left. left. left. left. right. unfold bob_arm. left. left. right. 
-             unfold seq.  assert (Hpodis: po (map_exec_Arm_X86 execArm) x y \/  po (map_exec_Arm_X86 execArm) y x). 
-             { apply mo_same_thread_implies_po in Hmo...  } destruct Hpodis as [Hpo | Hcontra].
-             ---- simpl in Hpo. destruct Hpo as [x0 [y0 [Hpo [Hx0map Hy0map]]]].  
-                  simpl in Hmo. destruct Hmo as [x1 [y1 [Hmo [Hx1map Hy1map]]]]. 
-                  assert (HpoCopy: po execArm x0 y0). { eauto. } 
-                  assert (HmoCopy: mo execArm x1 y1). { eauto. } subst.  
-                  unfold well_formed_po in *. unfold well_formed_mo in *.  
-                  destruct Hpowf as [Hpowf _]. apply Hpowf in HpoCopy. apply Hmowf in HmoCopy.
-                  destruct HpoCopy as [Hevx0 Hevy0]. destruct HmoCopy as [Hevx1 [Hevy1 [Hbothw _]]].  
-                  unfold both_write in Hbothw. destruct Hbothw as [Hwx1 Hwy1]. 
-                  apply (map_event_Arm_X86_injective execArm e0_0 x1 Huid) in He0map...
-                  apply (map_event_Arm_X86_injective execArm e1_0 y1 Huid) in He1map... 
-                  apply (map_event_Arm_X86_injective execArm x1 x0 Huid) in Hx0map... 
-                  apply (map_event_Arm_X86_injective execArm y1 y0 Huid) in Hy0map... 
-                  unfold W. unfold eqv_rel. subst. exists y0. split...  
-             ---- apply moi_x86_against_po_false in Hcontra... exfalso... 
-                  unfold internal. split...
-         ---    left. left. right. unfold external. simpl in Hmo.  
-                destruct Hmo as [x1 [y1 [Hmo [Hx1map Hy1map]]]]. 
-                subst. unfold well_formed_mo in *.  
-                assert (HmoCopy: mo execArm x1 y1). { eauto. } 
-                apply Hmowf in HmoCopy. destruct HmoCopy as [Hevx1 [Hevy1 _]].      
-                apply (map_event_Arm_X86_injective execArm e0_0 x1 Huid) in He0map...  
-                apply (map_event_Arm_X86_injective execArm e1_0 y1 Huid) in He1map...   
-                subst. split... unfold not in *. intros. apply n. 
-                apply map_event_Arm_X86_preserves_same_thread...  
-    - intros a b Heva Hevb Heqx Heqy; subst.
-      assert (Hevz : events (map_exec_Arm_X86 execArm) z).
+         --- subst. left. left. left. left. right. apply fri_x86_maps_to_bob_arm... split...  
+         --- subst. left. right. apply fre_x86_maps_to_fre_arm... split...        
+      -- destruct (same_thread_dec_x86 x y). 
+         --- subst. left. left. left. left. right. apply moi_x86_maps_to_bob_arm... split...  
+         --- subst. left. left. right. apply moe_x86_maps_to_moe_arm... split...   
+    - intros a b Heva Hevb Heqx Heqy. subst.  
+      assert (Hevz : events (map_exec_Arm_X86 execArm) z). 
       { destruct (hb_x86_in_events (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) z HwfX86) as [_ Hev]... }
-      simpl in Hevz. 
-      destruct Hevz as [ez [Hevez Heqez]]. 
-      unfold ob. 
-      eapply t_trans with ez. 
-      apply IH1... 
-      apply IH2... 
+      simpl in Hevz. destruct Hevz as [ez [Hevez Heqez]]. 
+      unfold ob. eapply t_trans with ez. apply IH1... apply IH2...
 Qed. 
 
 Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm), 
