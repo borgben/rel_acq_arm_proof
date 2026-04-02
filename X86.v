@@ -146,7 +146,8 @@ Qed.
 Lemma hb_x86_in_events :
     forall (exec : @Execution LabelX86 LabelClassX86) e1 e2,
     well_formed exec ->
-    hb_x86 exec e1 e2 -> events exec e1 /\ events exec e2.
+        hb_x86 exec e1 e2 -> 
+            events exec e1 /\ events exec e2.
 Proof with eauto.
     intros exec e1 e2 Hwf Hhb.
     unfold hb_x86 in Hhb.

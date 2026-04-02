@@ -109,19 +109,17 @@ Lemma arm_consistent_amo_is_rmw:
     forall (execArm: @Execution LabelArm LabelClassArm) (e0 e1: @Event LabelArm LabelClassArm),
         (amo execArm) ≡ (rmw execArm) -> (rmw execArm) e0 e1 -> (amo execArm) e0 e1.
 Proof with eauto. 
-    intros.
-    unfold same_relation in *. destruct H as [Hamo Hrmw]. 
-    unfold inclusion in *...      
+    intros. destruct H as [Hamo Hrmw]. unfold inclusion in *...      
 Qed.
 
 Lemma po_in_events_l : forall (execArm : @Execution LabelArm LabelClassArm) x y,
     well_formed_po execArm -> po execArm x y ->  events execArm x.
 Proof with eauto.
-    intros. unfold well_formed_po in *. destruct H as [H1 H2]. apply H1 in H0. destruct H0 as [H0 _]...
+    intros. destruct H as [H1 H2]. apply H1 in H0. destruct H0 as [H0 _]...
 Qed.
 
 Lemma po_in_events_r : forall (execArm : @Execution LabelArm LabelClassArm) x y,
     well_formed_po execArm -> po execArm x y -> events execArm y.
 Proof with eauto.
-    intros. unfold well_formed_po in *. destruct H as [H1 H2]. apply H1 in H0. destruct H0 as [_ H0]...
+    intros. destruct H as [H1 H2]. apply H1 in H0. destruct H0 as [_ H0]...
 Qed.  

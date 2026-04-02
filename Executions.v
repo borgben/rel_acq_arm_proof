@@ -103,6 +103,129 @@ Definition behaviour {Label: Type} {LabelProof: LabelClass Label} (X : Execution
       lab_val (event_label e) = v /\
       ~(exists (e': Event), (X.(mo) e e')).
 
+
+Lemma well_formed_po_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        po exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hpo. 
+    destruct Hwf as [Huid [[HpoWf _] _]]. eauto.
+Qed.   
+
+Lemma well_formed_rf_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rf exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrf. 
+    destruct Hwf as [_ [_ [_ [HrfWf  _]]]]. 
+    apply HrfWf in Hrf. destruct Hrf as [Hevx [Hevy _]]...  
+Qed.
+
+Lemma well_formed_rf_same_loc: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rf exec x y ->
+            same_loc x y. 
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrf. 
+    destruct Hwf as [_ [_ [ _ [HrfWf _]]]].  
+    apply HrfWf in Hrf. destruct Hrf as [_ [_ [_ [_ [Hsmeloc _]]]]]...
+Qed. 
+
+Lemma well_formed_mo_write_r: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        mo exec x y ->
+            is_w (event_label y). 
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hmo.  
+    destruct Hwf as [_ [_ [HmoWf _]]]. 
+    apply HmoWf in Hmo. destruct Hmo as [_ [_ [[_ Hwy] _]]]...  
+Qed.
+
+Lemma well_formed_mo_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        mo exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hmo.  
+    destruct Hwf as [_ [_ [HmoWf _]]]. 
+    apply HmoWf in Hmo. destruct Hmo as [Hevx [Hevy _]]...  
+Qed.
+
+Lemma well_formed_mo_same_loc: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        mo exec x y ->
+            same_loc x y. 
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hmo. 
+    destruct Hwf as [_ [_ [HmoWf _]]]. 
+    apply HmoWf in Hmo. destruct Hmo as [_ [_ [_ [Hsmeloc _]]]]...
+Qed. 
+
+Lemma well_formed_rmw_events: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rmw exec x y ->
+            events exec x /\ events exec y.
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrmw. 
+    destruct Hwf as [Huid [_ [_ [_ HrmwWf]]]]. 
+    apply HrmwWf in Hrmw. destruct Hrmw as [Hevx [Hevy _]]... 
+Qed.   
+
+Lemma well_formed_codom_rmw_write: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rmw exec x y ->
+            is_w (event_label y). 
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrmw. 
+    destruct Hwf as [Huid [_ [_ [_ HrmwWf]]]].
+    unfold well_formed_rmw in HrmwWf.  
+    apply HrmwWf in Hrmw. destruct Hrmw as [Hevx [Hevy [_ [Hw _]]]]... 
+Qed.   
+
+Lemma well_formed_dom_rmw_read: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rmw exec x y ->
+            is_r (event_label x). 
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrmw. 
+    destruct Hwf as [Huid [_ [_ [_ HrmwWf]]]].
+    unfold well_formed_rmw in HrmwWf.  
+    apply HrmwWf in Hrmw. destruct Hrmw as [Hevx [Hevy [Hr _]]]... 
+Qed. 
+
+Lemma well_formed_rmw_po: 
+    forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
+           (x y : @Event Label LabelProof),
+    well_formed exec ->
+        rmw exec x y ->
+            po exec x y.  
+Proof with eauto. 
+    intros Label LabelProof exec x y Hwf Hrmw. 
+    destruct Hwf as [Huid [_ [_ [_ HrmwWf]]]].
+    unfold well_formed_rmw in HrmwWf.  
+    apply HrmwWf in Hrmw. destruct Hrmw as [Hevx [Hevy [_ [_ [ [Hpo _] _]]]]]... 
+Qed. 
+
 Lemma fr_same_thread_implies_po:
     forall {Label: Type} {LabelProof : LabelClass Label} (exec: @Execution Label LabelProof)
            (x y : @Event Label LabelProof),
