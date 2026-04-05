@@ -1027,6 +1027,9 @@ Lemma hb_x86_mapped_implies_ob_arm :
                                     ob execArm e0 e1. 
 Proof with eauto. 
     intros execArm e0 e1 Harmcons HwfX86 Hev0 Hev1 HhbX86.
+
+    (* This assertion and subsequent remember and revert, is here because 
+       Rocq seems to lose context when performing induction directly on HhbX86... *)
     assert (Hgen : forall (a b : @Event LabelArm LabelClassArm),
         events execArm a -> events execArm b ->
             hb_x86 (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) (map_event_Arm_X86 b) 
@@ -1036,19 +1039,29 @@ Proof with eauto.
     unfold hb_x86 in Hhb.
     remember (map_event_Arm_X86 a) as x eqn:Heqx.
     remember (map_event_Arm_X86 b) as y eqn:Heqy.
-    revert a b Heva Hevb Heqx Heqy. 
-    induction Hhb as [x y Hbase | x z y Hhb1 IH1 Hhb2 IH2]. 
+    revert a b Heva Hevb Heqx Heqy.
+    
+    (* Begin induction... *)
+    induction Hhb as [x y Hbase | x z y Hhb1 IH1 Hhb2 IH2].
+    (* Base Cases *) 
     - intros a b Heva Hevb Heqx Heqy.
-      destruct Hbase as [[[[Hppo|Himp]|Herf]|Hfr]|Hmo]. 
+      destruct Hbase as [[[[Hppo|Himp]|Herf]|Hfr]|Hmo].
+      (* Case for ppox86 *) 
       -- subst. left. left. left. left. right. apply ppo_x86_maps_to_bob_arm...       
+      (* Case for implidx86 *)
       -- subst. left. left. left. left. right. apply implid_x86_maps_to_bob_arm... 
+      (* Case for rfe *)
       -- subst. left. left. left. right. apply rfe_x86_maps_to_rfe_arm...  
+      (* Case for fr *)
       -- destruct (same_thread_dec_x86 x y). 
          --- subst. left. left. left. left. right. apply fri_x86_maps_to_bob_arm... split...  
          --- subst. left. right. apply fre_x86_maps_to_fre_arm... split...        
+      (* Case for mo *)
       -- destruct (same_thread_dec_x86 x y). 
          --- subst. left. left. left. left. right. apply moi_x86_maps_to_bob_arm... split...  
-         --- subst. left. left. right. apply moe_x86_maps_to_moe_arm... split...   
+         --- subst. left. left. right. apply moe_x86_maps_to_moe_arm... split...  
+         
+    (* Inductive Case ... *)
     - intros a b Heva Hevb Heqx Heqy. subst.  
       assert (Hevz : events (map_exec_Arm_X86 execArm) z). 
       { destruct (hb_x86_in_events (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) z HwfX86) as [_ Hev]... }
@@ -1059,20 +1072,38 @@ Qed.
 Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm), 
     arm_consistent execArm -> ordered_before_axiom_arm execArm -> ordered_before_axiom_x86 (map_exec_Arm_X86 execArm). 
 Proof with eauto.  
-    intros execArm HarmCons HobAxArm. 
-    assert (HarmConsCopy: arm_consistent execArm). { eauto. }
-    unfold arm_consistent in HarmConsCopy. 
-    destruct HarmConsCopy as [HwfArm _].    
-    unfold ordered_before_axiom_arm in *. 
-    unfold ordered_before_axiom_x86. 
-    unfold irreflexive in *. intros x HhbX86. 
+    intros execArm HarmCons HobAxArm.
+    (* Copying arm consistency to extract well_formed *) 
+    pose proof HarmCons as HarmConsCopy.
+    destruct HarmConsCopy as [HwfArm _].
+    (* Ordered Before X86 is defined as irreflexsive hb, 
+       irreflexsivity: (reflexsive ...) -> False. 
+       intros in this case unfolds the definition and 
+       introduces the reflexivity hypothesis and makes
+       False the goal. *)
+    intros x HhbX86.
+    (* We will prove False by first proving that every hbX86 chain 
+       corresponds to a bob_arm chain. Since we have a hypothesis that states   
+       (reflexsive bob_arm ...) -> False, and a hypothesis stating 
+       (reflexsive hb_x86 ...), we can use said lemma to derive False 
+       as is required. *)
+
+    (* The lemma proving that every hbX86 chain corresponds to a bob_arm chain. 
+       relies on well_formedness. *) 
     assert (HwfX86: well_formed (map_exec_Arm_X86 execArm)).  
-    { apply (mapping_preserves_well_formedness execArm HwfArm). }    
-    assert (Hevents: (events (map_exec_Arm_X86 execArm) x /\ events (map_exec_Arm_X86 execArm) x)). 
-    { apply (hb_x86_in_events (map_exec_Arm_X86 execArm) x x HwfX86 HhbX86). } 
-    destruct Hevents as [Hevx _]. simpl in Hevx. destruct Hevx as [e [Heve Hmapx]]. 
-    specialize (HobAxArm e). apply HobAxArm. 
-    subst. apply hb_x86_mapped_implies_ob_arm...    
+    { apply (mapping_preserves_well_formedness execArm HwfArm). } 
+
+    (* The lemma proving that every hbX86 chain corresponds to a bob_arm chain. 
+       relies on the assumption that both ends of the chain reside in the 
+       execution.*)
+    assert (Hevx : events (map_exec_Arm_X86 execArm) x). 
+    { destruct (hb_x86_in_events (map_exec_Arm_X86 execArm) x x HwfX86) as [_ Hev]... } 
+    
+    (* By definition of our mapping, "events (map_exec_Arm_X86 execArm) x -> exists e, events execArm e" *)
+    simpl in Hevx. destruct Hevx as [e [Heve Hmapx]].
+    (* We specialise the "reflexsive bob_arm" lemma with "e" and use the 
+       hbx86 -> bob_arm lemma to conclude False *)
+    apply (HobAxArm e). subst. apply hb_x86_mapped_implies_ob_arm...    
 Qed. 
 
 Theorem semantic_preservation_x86_arm_release_acquire: 
