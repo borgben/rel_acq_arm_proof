@@ -3,7 +3,6 @@ From RelAcqProof Require Import Events.
 From RelAcqProof Require Import Arm.
 From RelAcqProof Require Import X86.
 From hahn Require Import Hahn.  
-Require Import Stdlib.Program.Equality.
 
 (* *************************** Map from X86 to Arm ************************* *)
 Definition map_label_x86_arm (lab_x86: LabelX86): LabelArm := 
@@ -716,25 +715,40 @@ Proof with eauto.
       apply (map_event_Arm_X86_injective execArm) in Hzmap0, Hx1map, Hy2map; subst...    
 Qed. 
 
-Lemma mapping_preserves_union: forall (execArm:@Execution LabelArm LabelClassArm) (e1 e2: Event),
-    let execX86 := map_exec_Arm_X86 execArm in
-    well_formed execArm -> events execArm e1 -> events execArm e2 ->
-        (poloc execX86 ∪ rf execX86 ∪ mo execX86 ∪ fr execX86) (map_event_Arm_X86 e1) (map_event_Arm_X86 e2) ->
-            (poloc execArm ∪ rf execArm ∪ mo execArm ∪ fr execArm) e1 e2.
-Proof with eauto.
-    intros execArm e1 e2 execX86 HwfArm Hev1 Hev2 Hx86.
-    unfold union in *.
-    pose proof HwfArm as HwfX86.
-    subst execX86.
-    destruct Hx86 as [[[Hpoloc | Hrf] | Hmo] | Hfr].
-    - apply inv_mapping_preserves_poloc in Hpoloc...
-    - apply inv_mapping_preserves_rf in Hrf...
-    - apply inv_mapping_preserves_mo in Hmo...
-    - apply inv_mapping_preserves_fr in Hfr...   
-Qed.
+Lemma mapping_preserves_coherence_chain: 
+    forall (execArm:@Execution LabelArm LabelClassArm) (e1 e2: Event),
+        let execX86 := map_exec_Arm_X86 execArm in
+        well_formed execArm ->
+            well_formed (map_exec_Arm_X86 execArm) ->
+                events execArm e1 -> 
+                    events execArm e2 ->
+                        (poloc execX86 ∪ rf execX86 ∪ mo execX86 ∪ fr execX86)⁺ (map_event_Arm_X86 e1) (map_event_Arm_X86 e2) ->
+                            (poloc execArm ∪ rf execArm ∪ mo execArm ∪ fr execArm)⁺ e1 e2. 
+Proof with eauto. 
+    intros execArm e1 e2 execX86 HwfArm HwfX86 Hev1 Hev2 Hcohx86.
+    assert (Hgen : forall (a b : @Event LabelArm LabelClassArm),
+        events execArm a -> events execArm b ->
+        (poloc execX86 ∪ rf execX86 ∪ mo execX86 ∪ fr execX86)⁺ (map_event_Arm_X86 a) (map_event_Arm_X86 b) ->
+            (poloc execArm ∪ rf execArm ∪ mo execArm ∪ fr execArm)⁺ a b). 
+    2: { apply Hgen... } 
+    intros a b Heva Hevb Hcohx86Prime.
+    remember (map_event_Arm_X86 a) as x eqn:Heqx.
+    remember (map_event_Arm_X86 b) as y eqn:Heqy.
+    revert a b Heva Hevb Heqx Heqy.
+    induction Hcohx86Prime as [x y Hbase | x z y Hhb1 IH1 Hhb2 IH2]. 
+    - intros a b Heva Hevb Heqx Heqy. subst.
+        destruct Hbase as [[[Hpoloc | Hrf] | Hmo] | Hfr].     
+        -- left. repeat left. apply inv_mapping_preserves_poloc in Hpoloc... 
+        -- left. left. left. right. apply inv_mapping_preserves_rf in Hrf... 
+        -- left. left. right. apply inv_mapping_preserves_mo in Hmo... 
+        -- left. right. apply inv_mapping_preserves_fr in Hfr...  
+    - intros a b Heva Hevb Heqx Heqy. subst. 
+      assert (Hevz : events (map_exec_Arm_X86 execArm) z). 
+      { destruct (coherence_implies_events (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) z HwfX86 Hhb1) as [_ Hev]... }
+      simpl in Hevz. destruct Hevz as [ez [Hevez Heqez]]. 
+      unfold ob. eapply t_trans with ez. apply IH1... apply IH2...
+Qed. 
 
-(* Unset Printing Notations. *)
-(* Print clos_trans. *)
 Lemma mapping_preserves_coherence: forall (execArm: @Execution LabelArm LabelClassArm), 
     well_formed execArm -> coherence_axiom execArm -> coherence_axiom (map_exec_Arm_X86 execArm). 
 Proof with eauto.
@@ -743,23 +757,17 @@ Proof with eauto.
     apply mapping_preserves_well_formedness in HwfX86.
     unfold coherence_axiom in *.
     unfold acyclic in *.
-    unfold irreflexive in *.
-    intros e_x86 H_x86.
-    pose proof H_x86 as H_x86'.
-    apply coherence_implies_events in H_x86' as [Hevx86 _].
-    simpl in Hevx86.
+    unfold irreflexive in *. 
+    intros e_x86 H_x86. 
+    pose proof H_x86 as H_x86'. 
+    pose proof HwfX86 as HwfX86''. 
+    apply coherence_implies_events in H_x86' as [Hevx86 _]...  
+    simpl in Hevx86. 
     destruct Hevx86 as [e_arm [HevArm HeMap]].
     specialize Hco with e_arm.
-    apply Hco.
-    dependent induction H_x86.
-    - apply (mapping_preserves_union execArm e_arm e_arm) in HwfArm...
-      apply (t_step _ _)...
-      subst...
-    - admit.
-    - assert (Hwf_x86: well_formed (map_exec_Arm_X86 execArm)). 
-      { apply mapping_preserves_well_formedness... }
-      eauto.
-Admitted.
+    apply Hco. apply mapping_preserves_coherence_chain...  
+    subst... 
+Qed. 
 
 Lemma fri_x86_against_po_false: forall (execArm: Execution) (e0 e1: Event),
     arm_consistent execArm 
@@ -1019,6 +1027,9 @@ Lemma hb_x86_mapped_implies_ob_arm :
                                     ob execArm e0 e1. 
 Proof with eauto. 
     intros execArm e0 e1 Harmcons HwfX86 Hev0 Hev1 HhbX86.
+
+    (* This assertion and subsequent remember and revert, is here because 
+       Rocq seems to lose context when performing induction directly on HhbX86... *)
     assert (Hgen : forall (a b : @Event LabelArm LabelClassArm),
         events execArm a -> events execArm b ->
             hb_x86 (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) (map_event_Arm_X86 b) 
@@ -1028,19 +1039,29 @@ Proof with eauto.
     unfold hb_x86 in Hhb.
     remember (map_event_Arm_X86 a) as x eqn:Heqx.
     remember (map_event_Arm_X86 b) as y eqn:Heqy.
-    revert a b Heva Hevb Heqx Heqy. 
-    induction Hhb as [x y Hbase | x z y Hhb1 IH1 Hhb2 IH2]. 
+    revert a b Heva Hevb Heqx Heqy.
+    
+    (* Begin induction... *)
+    induction Hhb as [x y Hbase | x z y Hhb1 IH1 Hhb2 IH2].
+    (* Base Cases *) 
     - intros a b Heva Hevb Heqx Heqy.
-      destruct Hbase as [[[[Hppo|Himp]|Herf]|Hfr]|Hmo]. 
+      destruct Hbase as [[[[Hppo|Himp]|Herf]|Hfr]|Hmo].
+      (* Case for ppox86 *) 
       -- subst. left. left. left. left. right. apply ppo_x86_maps_to_bob_arm...       
+      (* Case for implidx86 *)
       -- subst. left. left. left. left. right. apply implid_x86_maps_to_bob_arm... 
+      (* Case for rfe *)
       -- subst. left. left. left. right. apply rfe_x86_maps_to_rfe_arm...  
+      (* Case for fr *)
       -- destruct (same_thread_dec_x86 x y). 
          --- subst. left. left. left. left. right. apply fri_x86_maps_to_bob_arm... split...  
          --- subst. left. right. apply fre_x86_maps_to_fre_arm... split...        
+      (* Case for mo *)
       -- destruct (same_thread_dec_x86 x y). 
          --- subst. left. left. left. left. right. apply moi_x86_maps_to_bob_arm... split...  
-         --- subst. left. left. right. apply moe_x86_maps_to_moe_arm... split...   
+         --- subst. left. left. right. apply moe_x86_maps_to_moe_arm... split...  
+         
+    (* Inductive Case ... *)
     - intros a b Heva Hevb Heqx Heqy. subst.  
       assert (Hevz : events (map_exec_Arm_X86 execArm) z). 
       { destruct (hb_x86_in_events (map_exec_Arm_X86 execArm) (map_event_Arm_X86 a) z HwfX86) as [_ Hev]... }
@@ -1051,20 +1072,38 @@ Qed.
 Lemma mapping_preserves_ordered_before: forall (execArm:@Execution LabelArm LabelClassArm), 
     arm_consistent execArm -> ordered_before_axiom_arm execArm -> ordered_before_axiom_x86 (map_exec_Arm_X86 execArm). 
 Proof with eauto.  
-    intros execArm HarmCons HobAxArm. 
-    assert (HarmConsCopy: arm_consistent execArm). { eauto. }
-    unfold arm_consistent in HarmConsCopy. 
-    destruct HarmConsCopy as [HwfArm _].    
-    unfold ordered_before_axiom_arm in *. 
-    unfold ordered_before_axiom_x86. 
-    unfold irreflexive in *. intros x HhbX86. 
+    intros execArm HarmCons HobAxArm.
+    (* Copying arm consistency to extract well_formed *) 
+    pose proof HarmCons as HarmConsCopy.
+    destruct HarmConsCopy as [HwfArm _].
+    (* Ordered Before X86 is defined as irreflexsive hb, 
+       irreflexsivity: (reflexsive ...) -> False. 
+       intros in this case unfolds the definition and 
+       introduces the reflexivity hypothesis and makes
+       False the goal. *)
+    intros x HhbX86.
+    (* We will prove False by first proving that every hbX86 chain 
+       corresponds to a bob_arm chain. Since we have a hypothesis that states   
+       (reflexsive bob_arm ...) -> False, and a hypothesis stating 
+       (reflexsive hb_x86 ...), we can use said lemma to derive False 
+       as is required. *)
+
+    (* The lemma proving that every hbX86 chain corresponds to a bob_arm chain. 
+       relies on well_formedness. *) 
     assert (HwfX86: well_formed (map_exec_Arm_X86 execArm)).  
-    { apply (mapping_preserves_well_formedness execArm HwfArm). }    
-    assert (Hevents: (events (map_exec_Arm_X86 execArm) x /\ events (map_exec_Arm_X86 execArm) x)). 
-    { apply (hb_x86_in_events (map_exec_Arm_X86 execArm) x x HwfX86 HhbX86). } 
-    destruct Hevents as [Hevx _]. simpl in Hevx. destruct Hevx as [e [Heve Hmapx]]. 
-    specialize (HobAxArm e). apply HobAxArm. 
-    subst. apply hb_x86_mapped_implies_ob_arm...    
+    { apply (mapping_preserves_well_formedness execArm HwfArm). } 
+
+    (* The lemma proving that every hbX86 chain corresponds to a bob_arm chain. 
+       relies on the assumption that both ends of the chain reside in the 
+       execution.*)
+    assert (Hevx : events (map_exec_Arm_X86 execArm) x). 
+    { destruct (hb_x86_in_events (map_exec_Arm_X86 execArm) x x HwfX86) as [_ Hev]... } 
+    
+    (* By definition of our mapping, "events (map_exec_Arm_X86 execArm) x -> exists e, events execArm e" *)
+    simpl in Hevx. destruct Hevx as [e [Heve Hmapx]].
+    (* We specialise the "reflexsive bob_arm" lemma with "e" and use the 
+       hbx86 -> bob_arm lemma to conclude False *)
+    apply (HobAxArm e). subst. apply hb_x86_mapped_implies_ob_arm...    
 Qed. 
 
 Theorem semantic_preservation_x86_arm_release_acquire: 
