@@ -53,13 +53,7 @@ Definition is_ra l := match l with
                         | R_Acq _ _    => True
                       end.
 
-(* ARM axiom *)
-(* bob = ((R_acq_pc ; po) ∪ (po ; W_rel)) *)
-(* intervening-write(rel) = rel ; W ; rel *)
-(* lrs = W ; poloc / intervening-write(poloc) ; R *)
-(* aob = rmw ∪ (W ∩ codomain(rmw) ; lrs ; R) *)
-(* ob = (bob ∪ aob U rfe ∪ moe ∪ fre)+ *)
-
+(****************************************************************** Axiom Definition *************************************************************)
 Definition R: relation Event := ⦗fun r => is_r (event_label r)⦘.
 Definition W: relation Event := ⦗fun w => is_w (event_label w)⦘.
 Definition RA: relation Event := ⦗fun r => is_ra (event_label r)⦘. 
@@ -91,6 +85,8 @@ Definition ordered_before_axiom_arm (exec: Execution): Prop :=
 Definition arm_consistent (exec: Execution): Prop := 
     well_formed exec /\ (amo exec) ≡ (rmw exec) /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_arm exec.
 
+
+(**************************************************************** Auxillary Lemmas **********************************************************)
 Lemma same_thread_dec_arm:
     forall (e1 e2 : @Event LabelArm LabelClassArm),
     {same_thread e1 e2} + {~ same_thread e1 e2}.
@@ -101,8 +97,8 @@ Proof with eauto.
     - right...
     - right...
     - destruct (Nat.eq_dec tid tid0).
-      + left...
-      + right...
+      -- left...
+      -- right...
 Qed.
 
 Lemma arm_consistent_amo_is_rmw: 

@@ -40,6 +40,7 @@ Instance LabelClassX86: LabelClass LabelX86 := {
                        end;
 }.
 
+(****************************************************************** Axiom Definition *************************************************************)
 (* atomic ops (in domain or codomain of rmw) act as a barrier between them and what happens before or after *)
 Definition implid_x86 {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): relation Event :=
     let atomic := ⦗dom_rel (rmw exec)⦘ ∪ ⦗codom_rel (rmw exec)⦘ in
@@ -61,6 +62,7 @@ Definition ordered_before_axiom_x86 {Label: Type} {LabelProof : LabelClass Label
 Definition x86_consistent  {Label: Type} {LabelProof : LabelClass Label} (exec: Execution): Prop := 
     well_formed exec /\ atomicity_axiom exec /\ coherence_axiom exec /\ ordered_before_axiom_x86 exec.
 
+(**************************************************************** Auxillary Lemmas **********************************************************)
 Lemma same_thread_dec_x86:
     forall (e1 e2 : @Event LabelX86 LabelClassX86),
     {same_thread e1 e2} + {~ same_thread e1 e2}.
